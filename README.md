@@ -1,5 +1,8 @@
 # Adaptive Filters
+This is a porting of the adaptive filters algorithm (NLMS and RLS) implementation from
 
-The project is divided in two folders:
-> - python scripts of RLS and NLM algorithms
-> - C implementations for PULP
+[Pyroomacoustics](https://github.com/LCAV/pyroomacoustics/blob/master/examples/adaptive_filters.py)
+
+to C, for PULP platform
+
+[PULP](https://github.com/pulp-platform)
