@@ -1,0 +1,10 @@
+pyroomacoustics
+cookiecutter
+Cython
+numpy==1.23.0
+scipy>=0.18.0
+pybind11>=2.2
+matplotlib
+sounddevice
+samplerate
+mir_eval
