@@ -2,6 +2,7 @@
 #include "math.h"
 #include "data.h"
 #include "perf.h"
+#include "buffer.h"
 
 
 // RLS data structures 
@@ -19,6 +20,14 @@ float filter_w_check[LENGTH] = FINAL_RLS_FILTER_W;
 float filter_x[LENGTH]; 
 float filter_d = 0.0f;
 float diff[LENGTH];
+
+float P[LENGTH * LENGTH];
+float buffer[BUFF_LENGTH];
+// buffer can be doubled
+//int current_buff_len = LENGTH;
+int free_space = BUFF_LENGTH;
+float outer_buff[LENGTH * LENGTH];
+float g[LENGTH];
 
 // errors counter
 int errors = 0;
@@ -44,34 +53,95 @@ float norm_L2(float * vect, int n) {
   return sqrt(norm_2);
 }
 
+void gemv(int size_N, int size_M, float* mat_i, float* vec_1, float* vec_o){
+    for (int i=0; i<size_N; i++){
+      float temp = 0.0f;
+      for (int j=0; j<size_M; j++){
+          temp += mat_i[i*size_M+j] * vec_1[j];
+      }
+      vec_o[i] = temp;
+    }
+}
+
+void outer(int size_N, int size_M, float* vec_1, float* vec_2, float* matrix_o){
+    for (int i=0; i<size_N; i++){
+      for (int j=0; j<size_M; j++){
+          // multiply accumulate operation (MAC)
+          matrix_o[i*size_N + j] += vec_1[i] * vec_2[j];
+      }
+    }
+}
+
 void update(float x_n, float d_n, int n) {
   int i; 
   float acc = 0.0f, acc_1 = 0.0f;
-  
-  // shift elements in array on the right (last elemnt thrown away)
-  for(i = (n-1); i > 0; i--) {
-    filter_x[i] = filter_x[i-1];
-  }
-  filter_x[0] = x_n;
 
-  // inner product filter_x and filter_w
-  // and between fitler_x and itself
-  for(i = 0; i < n; i++) {
-    acc += filter_x[i] * filter_w[i];
-    acc_1 += filter_x[i] * filter_x[i];
+  // push on the buffer
+  free_space--;
+  buffer[free_space] = x_n;
+
+  // read LENGTH elements from the buffer
+  for (i = 0; i < LENGTH; i++) {
+    filter_x[i] = buffer[free_space + i];
   }
+  
+  for(i = 0; i < LENGTH; i++) {
+    acc += filter_x[i] * filter_w[i];
+  }
+
   acc = d_n - acc;
 
-  for(i = 0; i < n; i++) {
-    filter_w[i] += NLMS_MU * acc * (filter_x[i] / acc_1);
+  float aux[LENGTH];
+
+  for(i = 0; i < LENGTH; i++) {
+    aux[i] = filter_x[i] * RLS_LMBD_INV;
+  }
+
+  gemv(LENGTH, LENGTH, P, aux, g);
+    
+  for(i = 0; i < LENGTH; i++) {
+    acc_1 += filter_x[i] * g[i];
+  }
+
+  acc_1++;
+
+  for(i = 0; i < LENGTH; i++) {
+    g[i] /= acc_1;
+  }
+
+  for(i = 0; i < LENGTH; i++) {
+    filter_w[i] += acc * g[i];
+  }
+
+  float partial[LENGTH];
+  gemv(LENGTH, LENGTH, P, filter_x, partial);
+  
+  outer(LENGTH, LENGTH, g, partial, outer_buff);
+
+  for(i = 0; i < LENGTH; i++) {
+    for(int j = 0; j < LENGTH; j++) {
+      P[i * LENGTH + j] -= outer_buff[i * LENGTH + j];
+      P[i * LENGTH + j] *= RLS_LMBD_INV;
+    }
   }
 }
 
-void adaptive_filters_nlms() {
-    for(int i = 0; i < N_SAMPLES; i++) {
+void adaptive_filters_rls() {
+    for(int i = 0; i < 10; i++) {
       // update filter_x, then d, and eventually filter_w
       update(x[i], input[i], LENGTH);
+      printf("w at iteration %d\n", i);
+      print_array(filter_w, LENGTH);
+      // flush adjust value when buffer wil be dynamically resized
+      if (i % 160 == 0 && i > 0) {
+        
+        int num = BUFF_LENGTH - free_space;
+        free_space += num;
 
+        // shift elements in array on the right 
+        for(int i = (BUFF_LENGTH - num - 1); i > 0; i--) 
+            buffer[i + num] = buffer[i];
+      }
       // get error
       for(int j = 0; j < LENGTH; j++) {
         // clean prev result in diff
@@ -79,7 +149,22 @@ void adaptive_filters_nlms() {
         diff[j] = filter_w[j] - w[j];
       }
       error[i] = norm_L2(diff, LENGTH);
+      
     }
+}
+
+// init diagonal matrix with element in the diagonal
+void eye(float element, float * matrix, int n) {
+  int pos;
+  for(int i = 0; i < n; i++) {
+    for(int j = 0; j < n; j++) {
+      pos = i * n + j;
+      if(i == j) 
+        matrix[pos] = element;
+      else
+        matrix[pos] = 0.0f;
+    }
+  }
 }
 
 void zeros(float * arr, int n) {
@@ -119,6 +204,30 @@ void init() {
 
     //printf("Init local filter w:\n");
     //print_array(filter_w, LENGTH);
+
+    if (RLS_DELTA <= 0.0f) {
+      printf("Delta must be a positive number ...");
+      pmsis_exit(-1);
+    }
+    
+    // make a diagonal matrix with elements 1 / delta in the diagonal, i.e. P
+    eye(1 / RLS_DELTA, P, LENGTH);
+
+    // intial buffer with zeros
+    zeros(buffer, LENGTH);
+
+    // N.B. init buffer with (LENGTH - 1) 0s 
+    free_space -= (LENGTH - 1);
+
+    // init outer buffer with zeros
+    for(int i = 0; i < LENGTH; i++) {
+      for(int j = 0; j < LENGTH; j++) {
+        outer_buff[i * LENGTH + j] = 0.0f;
+      }
+    }
+
+    // initial g
+    zeros(g, LENGTH);    
 }
 
 int check(float * result, float * ground_truth, int n) {
@@ -150,7 +259,7 @@ void cluster_fn() {
 
   // workload
 
-  adaptive_filters_nlms();
+  adaptive_filters_rls();
 
   // stop measuring
   STOP_STATS();
@@ -159,14 +268,8 @@ void cluster_fn() {
   PRINT_STATS();
 
   // check the result
-  printf("Final error:\n");
-  print_array(error, N_SAMPLES);
-  printf("Ground truth error:\n");
-  print_array(error_check, N_SAMPLES);
-  errors = check(error, error_check, N_SAMPLES);
-  if(errors > 0) 
-    printf("You got %d errors on final error array.\n", errors);
-  errors = 0;
+  printf("Final error: %f\n", error[N_SAMPLES - 1]);
+  printf("Ground truth error: %f\n", error_check[N_SAMPLES - 1]);
 
   printf("Final filter w:\n");
   print_array(filter_w, LENGTH);

@@ -159,14 +159,8 @@ void cluster_fn() {
   PRINT_STATS();
 
   // check the result
-  printf("Final error:\n");
-  print_array(error, N_SAMPLES);
-  printf("Ground truth error:\n");
-  print_array(error_check, N_SAMPLES);
-  errors = check(error, error_check, N_SAMPLES);
-  if(errors > 0) 
-    printf("You got %d errors on final error array.\n", errors);
-  errors = 0;
+  printf("Final error: %f\n", error[N_SAMPLES - 1]);
+  printf("Ground truth error: %f\n", error_check[N_SAMPLES - 1]);
 
   printf("Final filter w:\n");
   print_array(filter_w, LENGTH);

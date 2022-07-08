@@ -2,7 +2,7 @@
 APP = rls
 
 # SOURCE FILES
-APP_SRCS += main.c cluster.c
+APP_SRCS += main.c cluster.c buffer.c
 
 # NUMBER OF USED CLUSTER CORES
 CORES ?= 1
