@@ -10,7 +10,6 @@ static void cluster_entry(void *arg)
   // Bare metal parallelism
   pi_cl_team_fork(NUM_CORES, cluster_fn, (void *)0x0);
 
-  cluster_fn();
 }
 
 

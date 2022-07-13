@@ -4,7 +4,6 @@
 #define HOTTING 2
 #define REPEAT  5
 
-
 #ifdef PERF
 
 #define INIT_STATS()   \
