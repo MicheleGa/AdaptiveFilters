@@ -31,15 +31,15 @@ No debug:
 > - LD stalls = 7680
 > - I$ misses = 660
 
-Added L1 allocation:
+Added Struct and L1 allocation:
 
-> - total cycles = 72916
-> - instructions = 37256
-> - active cycles = 72949
+> - total cycles = 72886
+> - instructions = 36992
+> - active cycles = 72919
 > - external loads (L2+synch) = 256
 > - TCDM cont = 0
-> - LD stalls = 7168
-> - I$ misses = 616
+> - LD stalls = 7424
+> - I$ misses = 583
 
 ## Parallel Version
 

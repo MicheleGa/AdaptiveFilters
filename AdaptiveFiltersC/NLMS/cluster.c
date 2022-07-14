@@ -4,34 +4,51 @@
 #include "perf.h"
 
 
-// TODO: make structures (Struct) instead of this shit with variables everywhere
+// adaptive filter data structures
+PI_L1 struct AdaptiveFilter{
 
+  float filter_w[LENGTH];
+  float filter_x[LENGTH]; 
+  float filter_d;
+
+  #ifdef DEBUG
+  float error[N_SAMPLES];
+  #endif
+} nlms;
+
+// input data structures
+PI_L1 struct InputData{
+
+  float w[LENGTH]; 
+  float x[N_SAMPLES];
+  float input[N_SAMPLES];
+
+  // data for checksum
+  float filter_w_check[LENGTH];
+  
+  #ifdef DEBUG
+  float error_check[N_SAMPLES];
+  #endif
+} input_data;
+
+// data from data.h
 // unknown filter
 float w_L2[LENGTH] = W_NLMS_INIT;
-PI_L1 float w[LENGTH];
-
 // X is a known driving signal
 float x_L2[N_SAMPLES] = NLMS_X;
-PI_L1 float x[N_SAMPLES] = NLMS_X;
-
 // input is the input signal with some noise added
 float input_L2[N_SAMPLES] = NLMS_INPUT;
-PI_L1 float input[N_SAMPLES];
-
-float error[N_SAMPLES];
-float error_check[N_SAMPLES] = NLMS_ERROR;
-
-// NLMS filter parameters
+// NLMS final filter parameters
 float filter_w_check_L2[LENGTH] = FINAL_NLMS_FILTER_W;
-PI_L1 float filter_w_check[LENGTH];
 
-PI_L1 float filter_w[LENGTH];
-PI_L1 float filter_x[LENGTH]; 
-PI_L1 float filter_d;
+#ifdef DEBUG
+// interesting to see all the history to appreciate steady-state
+float error_check_L2[N_SAMPLES] = NLMS_ERROR;
+#endif
+
+#ifdef DEBUG
 PI_L1 float diff[LENGTH];
-
-// errors counter
-int errors = 0;
+#endif
 
 void print_array(float * arr, int n) {
   printf("[");
@@ -95,33 +112,34 @@ void update(float x_n, float d_n, int n) {
   
   // shift elements in array on the right (last elemnt thrown away)
   for(i = (n-1); i > 0; i--) {
-    filter_x[i] = filter_x[i-1];
+    nlms.filter_x[i] = nlms.filter_x[i-1];
   }
-  filter_x[0] = x_n;
+  nlms.filter_x[0] = x_n;
 
   // inner product filter_x and filter_w
   // and between fitler_x and itself
   for(i = 0; i < n; i++) {
-    acc += filter_x[i] * filter_w[i];
-    acc_1 += filter_x[i] * filter_x[i];
+    acc += nlms.filter_x[i] * nlms.filter_w[i];
+    acc_1 += nlms.filter_x[i] * nlms.filter_x[i];
   }
   acc = NLMS_MU * (d_n - acc);
 
   for(i = 0; i < n; i++) {
-    filter_w[i] += acc * (filter_x[i] / acc_1);
+    nlms.filter_w[i] += acc * (nlms.filter_x[i] / acc_1);
   }
 }
+
 void adaptive_filters_nlms() {
     for(int i = 0; i < N_SAMPLES; i++) {
       // update filter_x, then d, and eventually filter_w
-      update(x[i], input[i], LENGTH);
+      update(input_data.x[i], input_data.input[i], LENGTH);
 
       #ifdef DEBUG
       // get error
       for(int j = 0; j < LENGTH; j++) 
-        diff[j] = filter_w[j] - w[j];
+        diff[j] = nlms.filter_w[j] - input_data.w[j];
       
-      error[i] = norm_L2(diff, LENGTH);
+      nlms.error[i] = norm_L2(diff, LENGTH);
       #endif
     
     }
@@ -137,28 +155,35 @@ void init() {
 
     // move data from L2 to L1
     for(int i = 0; i < LENGTH; i++) {
-      w[i] = w_L2[i];
-      x[i] = x_L2[i];
-      filter_w_check[i] = filter_w_check_L2[i];
+      input_data.w[i] = w_L2[i];
+      input_data.filter_w_check[i] = filter_w_check_L2[i];
     }
     for(int i = 0; i < N_SAMPLES; i++) {
-      input[i] = input_L2[i];
+      input_data.x[i] = x_L2[i];
+      input_data.input[i] = input_L2[i];
+
+      #ifdef DEBUG
+      input_data.error_check[i] = error_check_L2[i];
+      #endif
     }
-    filter_d = 0.0f;
 
     // normalize w
-    float norm_2 = norm_L2(w, LENGTH);
+    float norm_2 = norm_L2(input_data.w, LENGTH);
     for(int i = 0; i < LENGTH; i++) {
-      w[i] /= norm_2;
+      input_data.w[i] /= norm_2;
     }
 
+    // init filter's local x, w and d
+    zeros(nlms.filter_x, LENGTH);
+
+    zeros(nlms.filter_w, LENGTH);
+
+    nlms.filter_d = 0.0f;
+
+    #ifdef DEBUG
     // init with zeros: error, filter x and w, 
-    zeros(error, N_SAMPLES);
-
-    // init filter's local x and w
-    zeros(filter_x, LENGTH);
-
-    zeros(filter_w, LENGTH);
+    zeros(nlms.error, N_SAMPLES);
+    #endif
 
 }
 
@@ -197,18 +222,21 @@ void cluster_fn() {
 
   #ifdef DEBUG
   // check the result
-  printf("Final error: %f\n", error[N_SAMPLES - 1]);
-  printf("Ground truth error: %f\n", error_check[N_SAMPLES - 1]);
+  printf("Final error: %f\n", nlms.error[N_SAMPLES - 1]);
+  printf("Ground truth error: %f\n", input_data.error_check[N_SAMPLES - 1]);
   #endif
 
+  // final filter weights
   printf("Final filter w:\n");
-  print_array(filter_w, LENGTH);
+  print_array(nlms.filter_w, LENGTH);
   printf("Ground truth filter w:\n");
-  print_array(filter_w_check, LENGTH);
-  errors = check(filter_w, filter_w_check, LENGTH);
-  if(errors > 0) 
-    printf("You got %d errors on final filter w array, with tollerance %d.\n", errors, TOL);
-  errors = 0;
+  print_array(input_data.filter_w_check, LENGTH);
+
+  // checksum
+  int errors_counter = check(nlms.filter_w, input_data.filter_w_check, LENGTH);
+  if(errors_counter > 0) 
+    printf("You got %d errors on final filter w array, with tollerance %d.\n", errors_counter, TOL);
+  errors_counter = 0;
 
   pmsis_exit(0);
 }
