@@ -40,10 +40,3 @@ Added Struct and L1 allocation:
 > - TCDM cont = 0
 > - LD stalls = 7424
 > - I$ misses = 583
-
-## Parallel Version
-
-init cycles:
-
-sequential:9853
-
