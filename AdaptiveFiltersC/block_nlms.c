@@ -2,6 +2,13 @@
 #include "math.h"
 #include "data.h"
 #include "perf.h"
+#include "utils.h"
+
+
+// algorithm specific constants
+#define NLMS_MU 0.5f
+#define BLOCK_SIZE 2
+#define FILTER_X_SIZE (BLOCK_SIZE + LENGTH - 1)
 
 
 // adaptive filter data structures
@@ -11,10 +18,6 @@ PI_L1 struct AdaptiveFilter{
   float filter_x[FILTER_X_SIZE];
   float block[BLOCK_SIZE];
   float filter_d;
-
-  #ifdef DEBUG
-  float error[N_SAMPLES];
-  #endif
 } nlms;
 
 // input data structures
@@ -26,7 +29,7 @@ PI_L1 struct InputData{
 
   // data for checksum
   float filter_w_check[LENGTH];
-  
+
   #ifdef DEBUG
   float error_check[N_SAMPLES];
   #endif
@@ -34,63 +37,25 @@ PI_L1 struct InputData{
 
 // data from data.h
 // unknown filter
-float w_L2[LENGTH] = W_NLMS_INIT;
+float w_L2[LENGTH] = W_INIT;
 // X is a known driving signal
-float x_L2[N_SAMPLES] = NLMS_X;
+float x_L2[N_SAMPLES] = X;
 // input is the input signal with some noise added
-float input_L2[N_SAMPLES] = NLMS_INPUT;
+float input_L2[N_SAMPLES] = INPUT;
 // NLMS final filter parameters
-float filter_w_check_L2[LENGTH] = FINAL_NLMS_FILTER_W;
+float filter_w_check_L2[LENGTH] = FINAL_FILTER_W;
 
 #ifdef DEBUG
 // interesting to see all the history to appreciate steady-state
-float error_check_L2[N_SAMPLES] = NLMS_ERROR;
-#endif
+float error_check_L2[N_SAMPLES] = ERROR;
 
-#ifdef DEBUG
+PI_L1 float error[N_SAMPLES];
 PI_L1 float diff[LENGTH];
 #endif
 
-// why using iteration insteand directly the index of update's for -> modulo opration inside update problematic
+// why using iteration instead of directly the index of update's for 
+// -> modulo operation inside update is problematic
 int iteration = 0;
-
-void print_array(float * arr, int n) {
-  printf("[");
-  for (int i = 0; i < (n - 1); i++) {
-      printf("%f, ", arr[i]);
-    }
-  printf("%f]\n", arr[n - 1]);
-}
-
-void mat_transpose(float * mat_in, float * mat_out, int sizeM, int sizeN){
-  for (int i = 0; i < sizeM; i++) {
-    for (int j = 0; j < sizeN; j++) {
-      mat_out[i*sizeN+j] = mat_in[j*sizeM+i];
-    }
-  }
-}
-
-float norm_L2(float * vect, int n) {
-  
-  float norm_2 = 0.0f;
-  float temp;
-  for(int i = 0; i < n; i++) {
-      temp = vect[i];
-      norm_2 += temp * temp;
-  }
-
-  return sqrt(norm_2);
-}
-
-void gemv(int size_N, int size_M, float* mat_i, float* vec_1, float* vec_o){
-    for (int i=0; i<size_N; i++){
-      float temp = 0.0f;
-      for (int j=0; j<size_M; j++){
-          temp += mat_i[i*size_M+j] * vec_1[j];
-      }
-      vec_o[i] = temp;
-    }
-}
 
 void update(float x_n, float d_n) {
   
@@ -170,7 +135,7 @@ void update(float x_n, float d_n) {
   }
 }
 
-void adaptive_filters_nlms() {
+void adaptive_filters_block_nlms() {
     for(int i = 0; i < N_SAMPLES; i++) {
       // update filter_x, then d, and eventually filter_w
       update(input_data.x[i], input_data.input[i]);
@@ -180,16 +145,10 @@ void adaptive_filters_nlms() {
       for(int j = 0; j < LENGTH; j++) 
         diff[j] = nlms.filter_w[j] - input_data.w[j];
       
-      nlms.error[i] = norm_L2(diff, LENGTH);
+      error[i] = norm_L2(diff, LENGTH);
       #endif
     
     }
-}
-
-void zeros(float * arr, int n) {
-  for(int i = 0; i < n; i++) {
-    arr[i] = 0.0f;
-  }
 }
 
 void init() {
@@ -225,20 +184,9 @@ void init() {
 
     #ifdef DEBUG
     // init with zeros: error, filter x and w, 
-    zeros(nlms.error, N_SAMPLES);
+    zeros(error, N_SAMPLES);
     #endif
 
-}
-
-int check(float * result, float * ground_truth, int n) {
-    int count = 0;
-    for(int i = 0; i < n; i++) {
-      if(round(result[i]* TOL) != round(ground_truth[i]*TOL)) {
-          count++;
-          printf("Error at position %d, got %f instead of %f\n", i, result[i], ground_truth[i]);
-      }
-    }
-    return count;
 }
 
 void cluster_fn() {
@@ -254,8 +202,7 @@ void cluster_fn() {
   START_STATS();
 
   // workload
-
-  adaptive_filters_nlms();
+  adaptive_filters_block_nlms();
 
   // stop measuring
   STOP_STATS();
@@ -265,7 +212,7 @@ void cluster_fn() {
 
   #ifdef DEBUG
   // check the result
-  printf("Final error: %f\n", nlms.error[N_SAMPLES - 1]);
+  printf("Final error: %f\n", error[N_SAMPLES - 1]);
   printf("Ground truth error: %f\n", input_data.error_check[N_SAMPLES - 1]);
   #endif
 

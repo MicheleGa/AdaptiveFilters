@@ -1,8 +1,8 @@
 # APPLICATION NAME
-APP = rls
+APP = adaptive_filters
 
 # SOURCE FILES
-APP_SRCS += main.c cluster.c
+APP_SRCS += main.c block_nlms.c utils.c
 
 # NUMBER OF USED CLUSTER CORES
 CORES ?= 1
@@ -11,7 +11,7 @@ CORES ?= 1
 APP_CFLAGS += -DPERF
 
 # CHECK RESULTS
-#APP_CFLAGS += -DDEBUG
+APP_CFLAGS += -DDEBUG
 
 # COMPILER FLAGS
 APP_CFLAGS += -O3 -g3 -DNUM_CORES=${CORES}

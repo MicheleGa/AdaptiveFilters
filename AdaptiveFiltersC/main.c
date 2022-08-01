@@ -17,9 +17,9 @@ int main()
 {
 
   printf("\n");
-  printf("*****************************\n");
-  printf("*  ADAPTIVE FILTERS - NLMS  *\n");
-  printf("*****************************\n");
+  printf("**********************\n");
+  printf("*  ADAPTIVE FILTERS  *\n");
+  printf("**********************\n");
   printf("\n");
 
   struct pi_device cluster_dev = {0};

@@ -1,4 +1,4 @@
-# NLMS 
+# Adaptive Filters
 
 ## Sequential Version
 

@@ -2,6 +2,14 @@
 #include "math.h"
 #include "data.h"
 #include "perf.h"
+#include "utils.h"
+
+
+// algorithm specific constants
+#define RLS_LMBD 1.0f
+#define RLS_LMBD_INV 1.0f / RLS_LMBD
+#define RLS_DELTA 2.0f
+
 
 // adaptive filter data structures
 PI_L1 struct AdaptiveFilter{
@@ -14,10 +22,6 @@ PI_L1 struct AdaptiveFilter{
   float P[LENGTH * LENGTH];
   // try to make out_buff a local var of fun update()
   float outer_buff[LENGTH * LENGTH];
-
-  #ifdef DEBUG
-  float error[N_SAMPLES];
-  #endif
 } rls;
 
 // input data structures
@@ -37,60 +41,22 @@ PI_L1 struct InputData{
 
 // data from data.h
 // unknown filter
-float w_L2[LENGTH] = W_RLS_INIT;
+float w_L2[LENGTH] = W_INIT;
 // X is a known driving signal
-float x_L2[N_SAMPLES] = RLS_X;
+float x_L2[N_SAMPLES] = X;
 // input is the input signal with some noise added
-float input_L2[N_SAMPLES] = RLS_INPUT;
+float input_L2[N_SAMPLES] = INPUT;
 // NLMS final filter parameters
-float filter_w_check_L2[LENGTH] = FINAL_RLS_FILTER_W;
+float filter_w_check_L2[LENGTH] = FINAL_FILTER_W;
 
 #ifdef DEBUG
 // interesting to see all the history to appreciate steady-state
-float error_check_L2[N_SAMPLES] = RLS_ERROR;
-#endif
+float error_check_L2[N_SAMPLES] = ERROR;
 
-#ifdef DEBUG
+PI_L1 float error[N_SAMPLES];
 PI_L1 float diff[LENGTH];
 #endif
 
-void print_array(float * arr, int n) {
-  printf("[");
-  for (int i = 0; i < (n - 1); i++) {
-      printf("%f, ", arr[i]);
-    }
-  printf("%f]\n", arr[n - 1]);
-}
-
-float norm_L2(float * vect, int n) {
-  
-  float norm_2 = 0.0f;
-  
-  for(int i = 0; i < n; i++) {
-      norm_2 += vect[i] * vect[i];
-  }
-
-  return sqrt(norm_2);
-}
-
-void gemv(int size_N, int size_M, float* mat_i, float* vec_1, float* vec_o){
-    for (int i=0; i<size_N; i++){
-      float temp = 0.0f;
-      for (int j=0; j<size_M; j++){
-          temp += mat_i[i*size_M+j] * vec_1[j];
-      }
-      vec_o[i] = temp;
-    }
-}
-
-void outer(int size_N, int size_M, float* vec_1, float* vec_2, float* matrix_o){
-    for (int i=0; i<size_N; i++){
-      for (int j=0; j<size_M; j++){
-          matrix_o[i*size_N + j] = 0.0f;
-          matrix_o[i*size_N + j] += vec_1[i] * vec_2[j];
-      }
-    }
-}
 
 void update(float x_n, float d_n, int n) {
   int i; 
@@ -153,30 +119,9 @@ void adaptive_filters_rls() {
       for(int j = 0; j < LENGTH; j++) 
         diff[j] = rls.filter_w[j] - input_data.w[j];
       
-      rls.error[i] = norm_L2(diff, LENGTH);
-      #endif
-      
+      error[i] = norm_L2(diff, LENGTH);
+      #endif      
     }
-}
-
-// init diagonal matrix with element in the diagonal
-void eye(float element, float * matrix, int n) {
-  int pos;
-  for(int i = 0; i < n; i++) {
-    for(int j = 0; j < n; j++) {
-      pos = i * n + j;
-      if(i == j) 
-        matrix[pos] = element;
-      else
-        matrix[pos] = 0.0f;
-    }
-  }
-}
-
-void zeros(float * arr, int n) {
-  for(int i = 0; i < n; i++) {
-    arr[i] = 0.0f;
-  }
 }
 
 void init() {
@@ -210,7 +155,7 @@ void init() {
 
     #ifdef DEBUG
     // init with zeros: error, filter x and w, 
-    zeros(rls.error, N_SAMPLES);
+    zeros(error, N_SAMPLES);
     #endif
 
     if (RLS_DELTA <= 0.0f) {
@@ -232,17 +177,6 @@ void init() {
     zeros(rls.g, LENGTH);    
 }
 
-int check(float * result, float * ground_truth, int n) {
-    int count = 0;
-    for(int i = 0; i < n; i++) {
-      if(round(result[i]* TOL) != round(ground_truth[i]*TOL)) {
-          count++;
-          printf("Error at position %d, got %f instead of %f\n", i, result[i], ground_truth[i]);
-      }
-    }
-    return count;
-}
-
 void cluster_fn() {
 
   // init performance counters
@@ -256,7 +190,6 @@ void cluster_fn() {
   START_STATS();
 
   // workload
-
   adaptive_filters_rls();
 
   // stop measuring
@@ -267,7 +200,7 @@ void cluster_fn() {
 
   #ifdef DEBUG
   // check the result
-  printf("Final error: %f\n", rls.error[N_SAMPLES - 1]);
+  printf("Final error: %f\n", error[N_SAMPLES - 1]);
   printf("Ground truth error: %f\n", input_data.error_check[N_SAMPLES - 1]);
   #endif
 
