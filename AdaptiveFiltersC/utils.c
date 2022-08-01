@@ -66,8 +66,9 @@ void eye(float element, float * matrix, int n) {
 
 // matrix-vector product
 void gemv(int size_N, int size_M, float* mat_i, float* vec_1, float* vec_o) {
+    float temp;
     for (int i=0; i<size_N; i++){
-      float temp = 0.0f;
+      temp = 0.0f;
       for (int j=0; j<size_M; j++){
           temp += mat_i[i*size_M+j] * vec_1[j];
       }

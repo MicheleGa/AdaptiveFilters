@@ -38,11 +38,11 @@ float x_L2[N_SAMPLES] = X;
 // input is the input signal with some noise added
 float input_L2[N_SAMPLES] = INPUT;
 // NLMS final filter parameters
-float filter_w_check_L2[LENGTH] = FINAL_FILTER_W;
+float filter_w_check_L2[LENGTH] = W_NLMS_FILTER_FINAL;
 
 #ifdef DEBUG
 // interesting to see all the history to appreciate steady-state
-float error_check_L2[N_SAMPLES] = ERROR;
+float error_check_L2[N_SAMPLES] = NLMS_ERROR;
 
 // error calculated at each iteration
 PI_L1 float error[N_SAMPLES];
@@ -74,6 +74,7 @@ void update(float x_n, float d_n, int n) {
 }
 
 void adaptive_filters_nlms() {
+      
     for(int i = 0; i < N_SAMPLES; i++) {
       // update filter_x, then d, and eventually filter_w
       update(input_data.x[i], input_data.input[i], LENGTH);

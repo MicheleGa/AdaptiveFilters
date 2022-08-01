@@ -6,8 +6,8 @@
 
 
 // algorithm specific constants
-#define NLMS_MU 0.5f
-#define BLOCK_SIZE 2
+#define NLMS_MU 0.001f
+#define BLOCK_SIZE 8
 #define FILTER_X_SIZE (BLOCK_SIZE + LENGTH - 1)
 
 
@@ -43,11 +43,11 @@ float x_L2[N_SAMPLES] = X;
 // input is the input signal with some noise added
 float input_L2[N_SAMPLES] = INPUT;
 // NLMS final filter parameters
-float filter_w_check_L2[LENGTH] = FINAL_FILTER_W;
+float filter_w_check_L2[LENGTH] = W_BLOCK_NLMS_FILTER_FINAL;
 
 #ifdef DEBUG
 // interesting to see all the history to appreciate steady-state
-float error_check_L2[N_SAMPLES] = ERROR;
+float error_check_L2[N_SAMPLES] = BLOCK_NLMS_ERROR;
 
 PI_L1 float error[N_SAMPLES];
 PI_L1 float diff[LENGTH];
@@ -69,7 +69,7 @@ void update(float x_n, float d_n) {
   if(iteration % BLOCK_SIZE == 0) {
     
     int i; 
-    float acc = 0.0f, acc_1 = 0.0f;
+    float acc, acc1;
   
     // build hankel matrix: the hankel matrix has constant anti-diagonals, 
     // with c as its first column (first BLOCK_SIZE elements from nlms.filter_x) and 
@@ -96,12 +96,13 @@ void update(float x_n, float d_n) {
 
     // calculate H norm along axis 1
     float norm[BLOCK_SIZE];
-    float temp;
     for(i=0; i < BLOCK_SIZE; i++) {
+      acc = 0.0f;
       for(int j=0; j < LENGTH; j++) {
-        temp = H[i*LENGTH+j];
-        norm[i] += temp * temp;
+        acc1 = H[i*LENGTH+j];
+        acc += acc1 * acc1;
       }
+      norm[i] = acc;
     }
     
     // transpose e divide by norm
@@ -121,7 +122,7 @@ void update(float x_n, float d_n) {
     for(i=0; i < LENGTH; i++) {
       nlms.filter_w[i] += NLMS_MU * aux[i];
     }
-
+    
     // remember a few values
     // need to make a copy of filter_x because we would like to change a data structure while iterating
     // over it
