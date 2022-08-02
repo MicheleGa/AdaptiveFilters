@@ -134,7 +134,7 @@ void update(float x_n, float d_n) {
 
     // (diag + H * pi).T -> coefficient matrix
     // pi.T -> dependent variables matrix
-      
+    print_array_2d(aux_data.aux_1, BLOCK_SIZE, BLOCK_SIZE);
   }
 }
 
