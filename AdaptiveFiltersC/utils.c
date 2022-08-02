@@ -94,3 +94,31 @@ void mat_transpose(float * mat_in, float * mat_out, int sizeM, int sizeN) {
     }
   }
 }
+
+// matrix multiplication
+void matMul(float * pSrcA, float  * pSrcB, float * pDstC, int m, int n, int o) {
+    int i, j, k;
+
+    for (k = 0; k < o; k++) {
+        for (i = 0; i < m; i++) {
+            float sum = 0.0f;
+            for (j = 0; j < n; j++) {
+                float a = pSrcA[i * n + j];
+                float b = pSrcB[j * o + k];
+                sum += a * b;
+            }
+            pDstC[i * o + k] = sum;
+        }
+    }
+}
+
+// matrix addition
+void matAdd(float * pSrcA, float  * pSrcB, float * pDstC, int m, int n, int o) {
+    int i, j;
+
+    for (j = 0; j < n; j++) {
+        for (i = 0; i < m; i++) {
+            pDstC[i * o + j] = pSrcA[i * o + j] + pSrcB[i * o + j]; 
+        }
+    }
+}

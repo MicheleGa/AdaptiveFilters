@@ -126,12 +126,13 @@ void adaptive_filters_rls() {
 
 void init() {
 
+    int i;
     // move data from L2 to L1
-    for(int i = 0; i < LENGTH; i++) {
+    for(i = 0; i < LENGTH; i++) {
       input_data.w[i] = w_L2[i];
       input_data.filter_w_check[i] = filter_w_check_L2[i];
     }
-    for(int i = 0; i < N_SAMPLES; i++) {
+    for(i = 0; i < N_SAMPLES; i++) {
       input_data.x[i] = x_L2[i];
       input_data.input[i] = input_L2[i];
 
@@ -142,7 +143,7 @@ void init() {
 
     // normalize w
     float norm_2 = norm_L2(input_data.w, LENGTH);
-    for(int i = 0; i < LENGTH; i++) {
+    for(i = 0; i < LENGTH; i++) {
       input_data.w[i] /= norm_2;
     }
     
@@ -167,7 +168,7 @@ void init() {
     eye(1 / RLS_DELTA, rls.P, LENGTH);
 
     // init outer buffer with zeros
-    for(int i = 0; i < LENGTH; i++) {
+    for(i = 0; i < LENGTH; i++) {
       for(int j = 0; j < LENGTH; j++) {
         rls.outer_buff[i * LENGTH + j] = 0.0f;
       }
