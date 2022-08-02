@@ -4,7 +4,7 @@
 int check(float * result, float * ground_truth, int n) {
     int count = 0;
     for(int i = 0; i < n; i++) {
-      if(round(result[i]* TOL) != round(ground_truth[i]*TOL)) {
+      if(round(result[i] * TOL) != round(ground_truth[i] * TOL)) {
           count++;
           printf("Error at position %d, got %f instead of %f\n", i, result[i], ground_truth[i]);
       }

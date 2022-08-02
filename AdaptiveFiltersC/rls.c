@@ -46,7 +46,7 @@ float w_L2[LENGTH] = W_INIT;
 float x_L2[N_SAMPLES] = X;
 // input is the input signal with some noise added
 float input_L2[N_SAMPLES] = INPUT;
-// NLMS final filter parameters
+// RLS final filter parameters
 float filter_w_check_L2[LENGTH] = W_RLS_FILTER_FINAL;
 
 #ifdef DEBUG
@@ -58,12 +58,12 @@ PI_L1 float diff[LENGTH];
 #endif
 
 
-void update(float x_n, float d_n, int n) {
+void update(float x_n, float d_n) {
   int i; 
   float acc = 0.0f, acc_1 = 0.0f;
 
   // shift elements in array on the right (last elemnt thrown away)
-  for(i = (n-1); i > 0; i--) {
+  for(i = (LENGTH-1); i > 0; i--) {
     rls.filter_x[i] = rls.filter_x[i-1];
   }
   rls.filter_x[0] = x_n;
@@ -112,7 +112,7 @@ void update(float x_n, float d_n, int n) {
 void adaptive_filters_rls() {
     for(int i = 0; i < N_SAMPLES; i++) {
       // update filter_x, then d, and eventually filter_w
-      update(input_data.x[i], input_data.input[i], LENGTH);
+      update(input_data.x[i], input_data.input[i]);
       
       #ifdef DEBUG
       // get error

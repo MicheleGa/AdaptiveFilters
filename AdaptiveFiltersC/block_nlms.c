@@ -6,7 +6,7 @@
 
 
 // algorithm specific constants
-#define NLMS_MU 0.001f
+#define NLMS_MU 0.001f 
 #define BLOCK_SIZE 8
 #define FILTER_X_SIZE (BLOCK_SIZE + LENGTH - 1)
 
@@ -18,7 +18,18 @@ PI_L1 struct AdaptiveFilter{
   float filter_x[FILTER_X_SIZE];
   float block[BLOCK_SIZE];
   float filter_d;
-} nlms;
+} block_nlms;
+
+// auxiliary data for block lms management
+PI_L1 struct AuxData{
+
+  float H[BLOCK_SIZE * LENGTH];   // hankel matrix
+  float err[BLOCK_SIZE];    // estimated error: e(n) = y(n) - H(n)*X(n) 
+  float norm[BLOCK_SIZE];   // H's norm2 along axis 1
+  float H_t[LENGTH * BLOCK_SIZE];  // just H transposed
+  float aux[LENGTH];    // intermediate computation vector to get final w update
+  float temp_filter_x[FILTER_X_SIZE];   // needed to correctly update filter's x
+} aux_data;
 
 // input data structures
 PI_L1 struct InputData{
@@ -35,20 +46,20 @@ PI_L1 struct InputData{
   #endif
 } input_data;
 
-// data from data.h
 // unknown filter
 float w_L2[LENGTH] = W_INIT;
 // X is a known driving signal
 float x_L2[N_SAMPLES] = X;
 // input is the input signal with some noise added
 float input_L2[N_SAMPLES] = INPUT;
-// NLMS final filter parameters
+// BLOCK NLMS final filter parameters
 float filter_w_check_L2[LENGTH] = W_BLOCK_NLMS_FILTER_FINAL;
 
 #ifdef DEBUG
 // interesting to see all the history to appreciate steady-state
 float error_check_L2[N_SAMPLES] = BLOCK_NLMS_ERROR;
 
+// error calculated at each iteration
 PI_L1 float error[N_SAMPLES];
 PI_L1 float diff[LENGTH];
 #endif
@@ -62,76 +73,68 @@ void update(float x_n, float d_n) {
   iteration++;
   int slot = BLOCK_SIZE - ((iteration - 1) % BLOCK_SIZE) - 1;
   
-  nlms.filter_x[slot] = x_n;
-  nlms.block[slot] = d_n;
+  block_nlms.filter_x[slot] = x_n;
+  block_nlms.block[slot] = d_n;
 
   // perform an update of the coefficients every BLOCK_SIZE samples
   if(iteration % BLOCK_SIZE == 0) {
     
-    int i; 
+    int i,j; 
     float acc, acc1;
   
     // build hankel matrix: the hankel matrix has constant anti-diagonals, 
-    // with c as its first column (first BLOCK_SIZE elements from nlms.filter_x) and 
-    // r as its last row (last LENGTH elements from nlms.filter_x)
-    float H[BLOCK_SIZE * LENGTH];
-
+    // with c as its first column (first BLOCK_SIZE elements from block_nlms.filter_x) and 
+    // r as its last row (last LENGTH elements from block_nlms.filter_x)
     for(i = 0; i < BLOCK_SIZE; i++) {
-      int j;
       for(j = 0; j < (BLOCK_SIZE - i); j++) {
-        H[i*LENGTH+j] = nlms.filter_x[j+i];
+        aux_data.H[i*LENGTH+j] = block_nlms.filter_x[j+i];
       }
       for(int k = 0; k < (LENGTH - j); k++) {
-        H[i*LENGTH+j+k] = nlms.filter_x[BLOCK_SIZE+k];
+        aux_data.H[i*LENGTH+j+k] = block_nlms.filter_x[BLOCK_SIZE+k];
       }
     }
     
     // calculate error
-    float err[BLOCK_SIZE];
-    gemv(BLOCK_SIZE, LENGTH, H, nlms.filter_w, err);
+    gemv(BLOCK_SIZE, LENGTH, aux_data.H, block_nlms.filter_w, aux_data.err);
     
-    for(i=0; i < BLOCK_SIZE; i++) {
-      err[i] = nlms.block[i] - err[i]; 
+    for(i = 0; i < BLOCK_SIZE; i++) {
+      aux_data.err[i] = block_nlms.block[i] - aux_data.err[i]; 
     }
 
-    // calculate H norm along axis 1
-    float norm[BLOCK_SIZE];
-    for(i=0; i < BLOCK_SIZE; i++) {
+    // calculate H norm along axis 1 (no final sqrt)
+    for(i = 0; i < BLOCK_SIZE; i++) {
       acc = 0.0f;
-      for(int j=0; j < LENGTH; j++) {
-        acc1 = H[i*LENGTH+j];
+      for(j = 0; j < LENGTH; j++) {
+        acc1 = aux_data.H[i*LENGTH+j];
         acc += acc1 * acc1;
       }
-      norm[i] = acc;
+      aux_data.norm[i] = acc;
     }
     
     // transpose e divide by norm
-    float H_t[LENGTH * BLOCK_SIZE];
-    mat_transpose(H, H_t, LENGTH, BLOCK_SIZE);
+    mat_transpose(aux_data.H, aux_data.H_t, LENGTH, BLOCK_SIZE);
 
-    for(i=0; i < LENGTH; i++) {
-      for(int j=0; j < BLOCK_SIZE; j++) {
-          H_t[i*BLOCK_SIZE+j] /= norm[j];
+    for(i = 0; i < LENGTH; i++) {
+      for(j = 0; j < BLOCK_SIZE; j++) {
+          aux_data.H_t[i*BLOCK_SIZE+j] /= aux_data.norm[j];
       }
     }
 
     // update coefficients
-    float aux[LENGTH];
-    gemv(LENGTH, BLOCK_SIZE, H_t, err, aux);
+    gemv(LENGTH, BLOCK_SIZE, aux_data.H_t, aux_data.err, aux_data.aux);
 
-    for(i=0; i < LENGTH; i++) {
-      nlms.filter_w[i] += NLMS_MU * aux[i];
+    for(i = 0; i < LENGTH; i++) {
+      block_nlms.filter_w[i] += NLMS_MU * aux_data.aux[i];
     }
     
     // remember a few values
     // need to make a copy of filter_x because we would like to change a data structure while iterating
     // over it
-    float temp_filter_x[FILTER_X_SIZE];
-    for(i=0; i < FILTER_X_SIZE; i++) {
-      temp_filter_x[i] = nlms.filter_x[i]; 
+    for(i = 0; i < FILTER_X_SIZE; i++) {
+      aux_data.temp_filter_x[i] = block_nlms.filter_x[i]; 
     }
-    for(i=0; i < (LENGTH - 1); i++) {
-      nlms.filter_x[FILTER_X_SIZE - LENGTH + 1 + i] = temp_filter_x[i]; 
+    for(i = 0; i < (LENGTH - 1); i++) {
+      block_nlms.filter_x[FILTER_X_SIZE - LENGTH + 1 + i] = aux_data.temp_filter_x[i]; 
     }
   }
 }
@@ -144,11 +147,10 @@ void adaptive_filters_block_nlms() {
       #ifdef DEBUG
       // get error
       for(int j = 0; j < LENGTH; j++) 
-        diff[j] = nlms.filter_w[j] - input_data.w[j];
+        diff[j] = block_nlms.filter_w[j] - input_data.w[j];
       
       error[i] = norm_L2(diff, LENGTH);
       #endif
-    
     }
 }
 
@@ -175,16 +177,15 @@ void init() {
     }
 
     // init filter's local x, w, block and d
-    zeros(nlms.filter_x, FILTER_X_SIZE);
+    zeros(block_nlms.filter_x, FILTER_X_SIZE);
     
-    zeros(nlms.filter_w, LENGTH);
+    zeros(block_nlms.filter_w, LENGTH);
 
-    zeros(nlms.block, BLOCK_SIZE);
+    zeros(block_nlms.block, BLOCK_SIZE);
     
-    nlms.filter_d = 0.0f;
+    block_nlms.filter_d = 0.0f;
 
     #ifdef DEBUG
-    // init with zeros: error, filter x and w, 
     zeros(error, N_SAMPLES);
     #endif
 
@@ -210,7 +211,7 @@ void cluster_fn() {
 
   // end of the performance statistics loop
   PRINT_STATS();
-
+  
   #ifdef DEBUG
   // check the result
   printf("Final error: %f\n", error[N_SAMPLES - 1]);
@@ -219,12 +220,12 @@ void cluster_fn() {
 
   // final filter weights
   printf("Final filter w:\n");
-  print_array(nlms.filter_w, LENGTH);
+  print_array(block_nlms.filter_w, LENGTH);
   printf("Ground truth filter w:\n");
   print_array(input_data.filter_w_check, LENGTH);
 
   // checksum
-  int errors_counter = check(nlms.filter_w, input_data.filter_w_check, LENGTH);
+  int errors_counter = check(block_nlms.filter_w, input_data.filter_w_check, LENGTH);
   if(errors_counter > 0) 
     printf("You got %d errors on final filter w array, with tollerance %d.\n", errors_counter, TOL);
   errors_counter = 0;

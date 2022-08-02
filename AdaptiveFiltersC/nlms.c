@@ -50,25 +50,25 @@ PI_L1 float diff[LENGTH];
 #endif
 
 
-void update(float x_n, float d_n, int n) {
+void update(float x_n, float d_n) {
   int i; 
   float acc = 0.0f, acc_1 = 0.0f;
   
   // shift elements in array on the right (last elemnt thrown away)
-  for(i = (n-1); i > 0; i--) {
+  for(i = (LENGTH-1); i > 0; i--) {
     nlms.filter_x[i] = nlms.filter_x[i-1];
   }
   nlms.filter_x[0] = x_n;
 
   // inner product filter_x and filter_w
   // and between fitler_x and itself
-  for(i = 0; i < n; i++) {
+  for(i = 0; i < LENGTH; i++) {
     acc += nlms.filter_x[i] * nlms.filter_w[i];
     acc_1 += nlms.filter_x[i] * nlms.filter_x[i];
   }
   acc = NLMS_MU * (d_n - acc);
 
-  for(i = 0; i < n; i++) {
+  for(i = 0; i < LENGTH; i++) {
     nlms.filter_w[i] += acc * (nlms.filter_x[i] / acc_1);
   }
 }
@@ -77,7 +77,7 @@ void adaptive_filters_nlms() {
       
     for(int i = 0; i < N_SAMPLES; i++) {
       // update filter_x, then d, and eventually filter_w
-      update(input_data.x[i], input_data.input[i], LENGTH);
+      update(input_data.x[i], input_data.input[i]);
 
       #ifdef DEBUG
       // get error
@@ -119,7 +119,6 @@ void init() {
     nlms.filter_d = 0.0f;
 
     #ifdef DEBUG
-    // init with zeros: error
     zeros(error, N_SAMPLES);
     #endif
 
