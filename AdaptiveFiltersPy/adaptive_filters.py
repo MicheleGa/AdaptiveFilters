@@ -66,8 +66,7 @@ with open(results_file, 'a') as rec_file:
                                         data_name='d',
                                         length=n_samples))
 
-    # create a bunch adaptive filters
-    #filter=pra.adaptive.RLS(length, lmbd=1.0, delta=2.0)
+    # nlms
     filter=pra.adaptive.NLMS(length, mu=0.5)
     error=np.zeros(n_samples)
 
@@ -85,6 +84,7 @@ with open(results_file, 'a') as rec_file:
                                         data_name='nlms_error',
                                         length=n_samples))
     
+    # rls
     filter=pra.adaptive.RLS(length, lmbd=1.0, delta=2.0)
     error=np.zeros(n_samples)
 
@@ -102,6 +102,7 @@ with open(results_file, 'a') as rec_file:
                                         data_name='rls_error',
                                         length=n_samples))
 
+    # block (n)lms
     filter=pra.adaptive.BlockLMS(length, mu=0.001, L=8, nlms=True)
     error=np.zeros(n_samples)
 
@@ -117,5 +118,23 @@ with open(results_file, 'a') as rec_file:
     rec_file.write(get_string_to_record(desc='Final block_nlms filter error',
                                         data=error,
                                         data_name='block_nlms_error',
+                                        length=n_samples))
+
+    # block rls
+    filter=pra.adaptive.BlockRLS(length, lmbd=1.0, delta=2.0, L=8)
+    error=np.zeros(n_samples)
+
+    for i in range(n_samples):
+        filter.update(x[i], d[i])
+        error[i] = np.linalg.norm(filter.w - w)
+    
+    rec_file.write(get_string_to_record(desc='Final block_rls filter weights',
+                                        data=filter.w,
+                                        data_name='w_block_rls_filter_final',
+                                        length=length))
+    
+    rec_file.write(get_string_to_record(desc='Final block_rls filter error',
+                                        data=error,
+                                        data_name='block_rls_error',
                                         length=n_samples))
     

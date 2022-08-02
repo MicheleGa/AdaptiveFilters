@@ -38,16 +38,17 @@ d = [0.14060149009793552, 0.13412398282718385, -0.21504194599678444, -0.79600833
 # create a bunch adaptive filters
 #filter=pra.adaptive.RLS(length, lmbd=1.0, delta=2.0)
 #filter=pra.adaptive.NLMS(length, mu=0.5)
-filter=pra.adaptive.BlockLMS(length, mu=0.001, L=8, nlms=True)
+#filter=pra.adaptive.BlockLMS(length, mu=1.0 / 15.0 / 2.0, L=8, nlms=True)
+filter=pra.adaptive.BlockRLS(length, lmbd=1.0, delta=2.0, L=8)
 error=np.zeros(n_samples)
 
 for i in range(n_samples):
     filter.update(x[i], d[i])
     error[i] = np.linalg.norm(filter.w - w)
 
-for i in range(n_samples):
+""" for i in range(n_samples):
     if i % 16 == 0:
-        print(error[i]) 
+        print(error[i])  """
 print(error[-1])
 print(filter.w)
 """ plt.plot(w)
