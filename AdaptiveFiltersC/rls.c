@@ -20,6 +20,7 @@ PI_L1 struct AdaptiveFilter{
 
   float g[LENGTH];
   float P[LENGTH * LENGTH];
+  float aux[LENGTH];
   // try to make out_buff a local var of fun update()
   float outer_buff[LENGTH * LENGTH];
 } rls;
@@ -74,13 +75,11 @@ void update(float x_n, float d_n) {
 
   acc = d_n - acc;
 
-  float aux[LENGTH];
-
   for(i = 0; i < LENGTH; i++) {
-    aux[i] = rls.filter_x[i] * RLS_LMBD_INV;
+    rls.aux[i] = rls.filter_x[i] * RLS_LMBD_INV;
   }
 
-  gemv(LENGTH, LENGTH, rls.P, aux, rls.g);
+  gemv(LENGTH, LENGTH, rls.P, rls.aux, rls.g);
     
   for(i = 0; i < LENGTH; i++) {
     acc_1 += rls.filter_x[i] * rls.g[i];

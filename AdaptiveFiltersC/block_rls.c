@@ -1,4 +1,5 @@
 #include "pmsis.h"
+#include "plp_math.h"
 #include "math.h"
 #include "data.h"
 #include "perf.h"
@@ -22,7 +23,7 @@ PI_L1 struct AdaptiveFilter{
   float block[BLOCK_SIZE];
   float filter_d;
 
-  float g[LENGTH];
+  float g[BLOCK_SIZE * LENGTH];
   float P[LENGTH * LENGTH];
   // try to make out_buff a local var of fun update()
   float outer_buff[LENGTH * LENGTH];
@@ -35,11 +36,13 @@ PI_L1 struct AuxData{
   float lmbd_pwr[2 * BLOCK_SIZE];   // pre compute lambda powers for efficiency 
   float lmbd_inv_pwr[2 * BLOCK_SIZE];
   float H[BLOCK_SIZE * LENGTH];   // hankel matrix
-  float H_t[LENGTH * BLOCK_SIZE];  // just H transposed
+  float H_t[LENGTH * BLOCK_SIZE];  // just H trans
   float pi[LENGTH * BLOCK_SIZE];    // aux matrix for intermediate computations
   float pi_t[BLOCK_SIZE * LENGTH];    // just pi transposed
-  float aux_1[BLOCK_SIZE * BLOCK_SIZE];    // store H * pi
-  float diag[BLOCK_SIZE * BLOCK_SIZE];    // store H * pi
+  float aux[BLOCK_SIZE * BLOCK_SIZE];    // store H * pi
+  float aux1[BLOCK_SIZE * BLOCK_SIZE];
+  float aux2[LENGTH];
+  float diag[BLOCK_SIZE * BLOCK_SIZE];    
   float err[BLOCK_SIZE];    // estimated error: e(n) = y(n) - H(n)*X(n) 
 } aux_data;
 
@@ -92,7 +95,7 @@ void update(float x_n, float d_n) {
   if(iteration % BLOCK_SIZE == 0) {
     
     int i,j; 
-    float acc, acc1;
+    float acc = 0.0f, acc_1;
   
     // build hankel matrix: the hankel matrix has constant anti-diagonals, 
     // with c as its first column (first BLOCK_SIZE elements from block_rls.filter_x) and 
@@ -114,27 +117,38 @@ void update(float x_n, float d_n) {
     }
 
     // transpose 
-    mat_transpose(aux_data.H, aux_data.H_t, LENGTH, BLOCK_SIZE);
+    plp_mat_trans_f32(aux_data.H, BLOCK_SIZE, LENGTH, aux_data.H_t);
 
     // calculate gain vector
-    matMul(block_rls.P, aux_data.H_t, aux_data.pi, LENGTH, LENGTH, BLOCK_SIZE);
-
-    // transpose H
-    mat_transpose(aux_data.H, aux_data.H_t, LENGTH, BLOCK_SIZE);
+    plp_mat_mult_f32(block_rls.P, aux_data.H_t, LENGTH, LENGTH, BLOCK_SIZE, aux_data.pi);
 
     // transpose pi
-    mat_transpose(aux_data.pi, aux_data.pi_t, BLOCK_SIZE, LENGTH);
+    plp_mat_trans_f32(aux_data.pi, LENGTH, BLOCK_SIZE, aux_data.pi_t);
 
     // H * pi
-    matMul(aux_data.H, aux_data.pi, aux_data.aux_1, BLOCK_SIZE, LENGTH, BLOCK_SIZE);
+    plp_mat_mult_f32(aux_data.H, aux_data.pi, BLOCK_SIZE, LENGTH, BLOCK_SIZE, aux_data.aux);
 
     // diag + H * pi
-    matAdd(aux_data.diag, aux_data.aux_1, aux_data.aux_1, BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-    mat_transpose(aux_data.aux_1, aux_data.aux_1, BLOCK_SIZE, BLOCK_SIZE);
+    plp_mat_add_f32(aux_data.diag, aux_data.aux, BLOCK_SIZE, BLOCK_SIZE, aux_data.aux1);
+    plp_mat_trans_f32(aux_data.aux1, BLOCK_SIZE, BLOCK_SIZE, aux_data.aux);
 
     // (diag + H * pi).T -> coefficient matrix
     // pi.T -> dependent variables matrix
-    print_array_2d(aux_data.aux_1, BLOCK_SIZE, BLOCK_SIZE);
+    
+    // here we should look for a solution to a linear equation system Ax=b,
+    // with A = (diag + H * pi).T and b = pi.T
+
+    // trying with x = A^(-1)*b
+    plp_mat_inv_f32(aux_data.aux, aux_data.aux1, BLOCK_SIZE);
+    plp_mat_mult_f32(aux_data.aux1, aux_data.pi_t, BLOCK_SIZE, BLOCK_SIZE, LENGTH, block_rls.g);
+    plp_mat_trans_f32(block_rls.g, BLOCK_SIZE, LENGTH, aux_data.pi);
+
+    // update filter w
+    gemv(LENGTH, BLOCK_SIZE, aux_data.pi, aux_data.err, aux_data.aux2);
+    for(i = 0; i < LENGTH; i++) {
+      block_rls.filter_w[i] += aux_data.aux2[i];
+    }
+    print_array(block_rls.filter_w, LENGTH);
   }
 }
 
@@ -223,10 +237,8 @@ void init() {
       }
     }
 
-    print_array_2d(aux_data.diag, BLOCK_SIZE, BLOCK_SIZE);   
-
     #ifdef DEBUG
-    // init with zeros: error, filter x and w, 
+    // init with zeros: error
     zeros(error, N_SAMPLES);
     #endif
 
@@ -246,6 +258,7 @@ void cluster_fn() {
 
   // workload
   adaptive_filters_block_rls();
+  
 
   // stop measuring
   STOP_STATS();

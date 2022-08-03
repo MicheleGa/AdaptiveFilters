@@ -15,6 +15,6 @@ APP_CFLAGS += -DPERF
 
 # COMPILER FLAGS
 APP_CFLAGS += -O3 -g3 -DNUM_CORES=${CORES}
-APP_LDFLAGS += -lm
+APP_LDFLAGS += -lplpdsp -lm
 
 include $(RULES_DIR)/pmsis_rules.mk
