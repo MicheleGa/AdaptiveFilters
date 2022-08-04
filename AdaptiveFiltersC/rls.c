@@ -1,4 +1,5 @@
 #include "pmsis.h"
+#include "plp_math.h"
 #include "math.h"
 #include "data.h"
 #include "perf.h"
@@ -69,17 +70,19 @@ void update(float x_n, float d_n) {
   }
   rls.filter_x[0] = x_n;
   
+  // calculate error
   for(i = 0; i < LENGTH; i++) {
     acc += rls.filter_x[i] * rls.filter_w[i];
   }
 
   acc = d_n - acc;
 
+  // compute gain vector
   for(i = 0; i < LENGTH; i++) {
     rls.aux[i] = rls.filter_x[i] * RLS_LMBD_INV;
   }
 
-  gemv(LENGTH, LENGTH, rls.P, rls.aux, rls.g);
+  gemv(rls.P, rls.aux, LENGTH, LENGTH, rls.g);
     
   for(i = 0; i < LENGTH; i++) {
     acc_1 += rls.filter_x[i] * rls.g[i];
@@ -91,14 +94,15 @@ void update(float x_n, float d_n) {
     rls.g[i] /= acc_1;
   }
 
+  // update filter's w
   for(i = 0; i < LENGTH; i++) {
     rls.filter_w[i] += acc * rls.g[i];
   }
 
-  float partial[LENGTH];
-  gemv(LENGTH, LENGTH, rls.P, rls.filter_x, partial);
+  // update P (reuse aux)
+  gemv(rls.P, rls.filter_x, LENGTH, LENGTH, rls.aux);
   
-  outer(LENGTH, LENGTH, rls.g, partial, rls.outer_buff);
+  outer(rls.g, rls.aux, LENGTH, LENGTH, rls.outer_buff);
   
   for(i = 0; i < LENGTH; i++) {
     for(int j = 0; j < LENGTH; j++) {

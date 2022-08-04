@@ -25,6 +25,8 @@ PI_L1 struct AdaptiveFilter{
 
   float g[BLOCK_SIZE * LENGTH];
   float P[LENGTH * LENGTH];
+  float lmbd_pwr[2 * BLOCK_SIZE];   // pre compute lambda powers for efficiency 
+  float lmbd_inv_pwr[2 * BLOCK_SIZE];
   // try to make out_buff a local var of fun update()
   float outer_buff[LENGTH * LENGTH];
 } block_rls;
@@ -33,17 +35,16 @@ PI_L1 struct AdaptiveFilter{
 PI_L1 struct AuxData{
 
   // N.B.: lmbd_pwr/lmbd_inv_pwr have fixed-length (original version is variable on demand)
-  float lmbd_pwr[2 * BLOCK_SIZE];   // pre compute lambda powers for efficiency 
-  float lmbd_inv_pwr[2 * BLOCK_SIZE];
   float H[BLOCK_SIZE * LENGTH];   // hankel matrix
   float H_t[LENGTH * BLOCK_SIZE];  // just H trans
-  float pi[LENGTH * BLOCK_SIZE];    // aux matrix for intermediate computations
-  float pi_t[BLOCK_SIZE * LENGTH];    // just pi transposed
-  float aux[BLOCK_SIZE * BLOCK_SIZE];    // store H * pi
+  float err[BLOCK_SIZE];    // estimated error: e(n) = y(n) - H(n)*X(n)
+  // aux data to handle transpose correctly
+  float pi[LENGTH * BLOCK_SIZE];
+  float pi_t[BLOCK_SIZE * LENGTH];    
+  float aux[BLOCK_SIZE * BLOCK_SIZE];    
   float aux1[BLOCK_SIZE * BLOCK_SIZE];
   float aux2[LENGTH];
-  float diag[BLOCK_SIZE * BLOCK_SIZE];    
-  float err[BLOCK_SIZE];    // estimated error: e(n) = y(n) - H(n)*X(n) 
+  float diag[BLOCK_SIZE * BLOCK_SIZE];     
 } aux_data;
 
 // input data structures
@@ -95,7 +96,7 @@ void update(float x_n, float d_n) {
   if(iteration % BLOCK_SIZE == 0) {
     
     int i,j; 
-    float acc = 0.0f, acc_1;
+    float acc = 0.0f;
   
     // build hankel matrix: the hankel matrix has constant anti-diagonals, 
     // with c as its first column (first BLOCK_SIZE elements from block_rls.filter_x) and 
@@ -110,7 +111,7 @@ void update(float x_n, float d_n) {
     }
     
     // calculate error
-    gemv(BLOCK_SIZE, LENGTH, aux_data.H, block_rls.filter_w, aux_data.err);
+    gemv(aux_data.H, block_rls.filter_w, BLOCK_SIZE, LENGTH, aux_data.err);
     
     for(i = 0; i < BLOCK_SIZE; i++) {
       aux_data.err[i] = block_rls.block[i] - aux_data.err[i]; 
@@ -144,16 +145,36 @@ void update(float x_n, float d_n) {
     plp_mat_trans_f32(block_rls.g, BLOCK_SIZE, LENGTH, aux_data.pi);
 
     // update filter w
-    gemv(LENGTH, BLOCK_SIZE, aux_data.pi, aux_data.err, aux_data.aux2);
+    gemv(aux_data.pi, aux_data.err, LENGTH, BLOCK_SIZE, aux_data.aux2);
     for(i = 0; i < LENGTH; i++) {
       block_rls.filter_w[i] += aux_data.aux2[i];
     }
-    print_array(block_rls.filter_w, LENGTH);
+
+    // update P matrix
+    // be ware: pi contains the results of A^(-1)*b, i.e. g
+    plp_mat_mult_f32(aux_data.pi, aux_data.pi_t, LENGTH, BLOCK_SIZE, LENGTH, block_rls.outer_buff);
+    
+    acc = block_rls.lmbd_inv_pwr[BLOCK_SIZE];
+    for(i = 0; i < LENGTH; i++) {
+      for(int j = 0; j < LENGTH; j++) {
+        block_rls.P[i * LENGTH + j] -= block_rls.outer_buff[i * LENGTH + j];
+        block_rls.P[i * LENGTH + j] *= acc;
+      }
+    }
+
+    // remember a few values
+    // need to make a copy of filter_x because we would like to change a data structure 
+    // while iterating over it
+    plp_copy_f32(block_rls.filter_x, aux_data.aux2, (LENGTH - 1));
+    
+    for(i = 0; i < (LENGTH - 1); i++) {
+      block_rls.filter_x[FILTER_X_SIZE - LENGTH + 1 + i] = aux_data.aux2[i]; 
+    }
   }
 }
 
 void adaptive_filters_block_rls() {
-    for(int i = 0; i < 10; i++) {
+    for(int i = 0; i < N_SAMPLES; i++) {
       // update filter_x, then d, and eventually filter_w
       update(input_data.x[i], input_data.input[i]);
 
@@ -218,18 +239,18 @@ void init() {
     zeros(block_rls.g, LENGTH);
 
     // pre-compute powers of lambda/lambda inv
-    aux_data.lmbd_pwr[0] = 1.0f;
-    aux_data.lmbd_inv_pwr[0] = 1.0f;
+    block_rls.lmbd_pwr[0] = 1.0f;
+    block_rls.lmbd_inv_pwr[0] = 1.0f;
     for(i = 1; i < 2 * BLOCK_SIZE; i++) {
-      aux_data.lmbd_pwr[i] = aux_data.lmbd_pwr[i - 1] * RLS_LMBD;
-      aux_data.lmbd_inv_pwr[i] = aux_data.lmbd_inv_pwr[i - 1] * RLS_LMBD_INV;
+      block_rls.lmbd_pwr[i] = block_rls.lmbd_pwr[i - 1] * RLS_LMBD;
+      block_rls.lmbd_inv_pwr[i] = block_rls.lmbd_inv_pwr[i - 1] * RLS_LMBD_INV;
     }
 
     // pre-compute diagonal matrix that will be used later in the update function
     for(i = 0; i < BLOCK_SIZE; i++) {
       for(int j = 0; j < BLOCK_SIZE; j++) {
         if (i == j) {
-          aux_data.diag[i*BLOCK_SIZE+j] = aux_data.lmbd_pwr[BLOCK_SIZE - i];
+          aux_data.diag[i*BLOCK_SIZE+j] = block_rls.lmbd_pwr[BLOCK_SIZE - i];
         }
         else {
           aux_data.diag[i*BLOCK_SIZE+j] = 0.0f;

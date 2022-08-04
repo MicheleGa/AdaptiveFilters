@@ -1,4 +1,5 @@
 #include "pmsis.h"
+#include "plp_math.h"
 #include "math.h"
 #include "data.h"
 #include "perf.h"
@@ -24,11 +25,10 @@ PI_L1 struct AdaptiveFilter{
 PI_L1 struct AuxData{
 
   float H[BLOCK_SIZE * LENGTH];   // hankel matrix
-  float err[BLOCK_SIZE];    // estimated error: e(n) = y(n) - H(n)*X(n) 
-  float norm[BLOCK_SIZE];   // H's norm2 along axis 1
   float H_t[LENGTH * BLOCK_SIZE];  // just H transposed
+  float norm[BLOCK_SIZE];   // H's norm2 along axis 1
   float aux[LENGTH];    // intermediate computation vector to get final w update
-  float temp_filter_x[FILTER_X_SIZE];   // needed to correctly update filter's x
+  float err[BLOCK_SIZE];    // estimated error: e(n) = y(n) - H(n)*X(n) 
 } aux_data;
 
 // input data structures
@@ -80,61 +80,60 @@ void update(float x_n, float d_n) {
   if(iteration % BLOCK_SIZE == 0) {
     
     int i,j; 
-    float acc, acc1;
+    float acc = 0.0f, acc1 = 0.0f;
   
     // build hankel matrix: the hankel matrix has constant anti-diagonals, 
     // with c as its first column (first BLOCK_SIZE elements from block_nlms.filter_x) and 
     // r as its last row (last LENGTH elements from block_nlms.filter_x)
     for(i = 0; i < BLOCK_SIZE; i++) {
       for(j = 0; j < (BLOCK_SIZE - i); j++) {
-        aux_data.H[i*LENGTH+j] = block_nlms.filter_x[j+i];
+        aux_data.H[i * LENGTH+j] = block_nlms.filter_x[j + i];
       }
       for(int k = 0; k < (LENGTH - j); k++) {
-        aux_data.H[i*LENGTH+j+k] = block_nlms.filter_x[BLOCK_SIZE+k];
+        aux_data.H[i * LENGTH + j + k] = block_nlms.filter_x[BLOCK_SIZE + k];
       }
     }
     
     // calculate error
-    gemv(BLOCK_SIZE, LENGTH, aux_data.H, block_nlms.filter_w, aux_data.err);
+    gemv(aux_data.H, block_nlms.filter_w, BLOCK_SIZE, LENGTH, aux_data.err);
     
     for(i = 0; i < BLOCK_SIZE; i++) {
       aux_data.err[i] = block_nlms.block[i] - aux_data.err[i]; 
     }
 
-    // calculate H norm along axis 1 (no final sqrt)
+    // calculate norm 2 along axis 1 (no final sqrt) for matrix H
     for(i = 0; i < BLOCK_SIZE; i++) {
       acc = 0.0f;
       for(j = 0; j < LENGTH; j++) {
-        acc1 = aux_data.H[i*LENGTH+j];
+        acc1 = aux_data.H[i * LENGTH + j];
         acc += acc1 * acc1;
       }
       aux_data.norm[i] = acc;
     }
     
     // transpose e divide by norm
-    mat_transpose(aux_data.H, aux_data.H_t, LENGTH, BLOCK_SIZE);
+    plp_mat_trans_f32(aux_data.H, BLOCK_SIZE, LENGTH, aux_data.H_t);
 
     for(i = 0; i < LENGTH; i++) {
       for(j = 0; j < BLOCK_SIZE; j++) {
-          aux_data.H_t[i*BLOCK_SIZE+j] /= aux_data.norm[j];
+          aux_data.H_t[i * BLOCK_SIZE + j] /= aux_data.norm[j];
       }
     }
 
     // update coefficients
-    gemv(LENGTH, BLOCK_SIZE, aux_data.H_t, aux_data.err, aux_data.aux);
+    gemv(aux_data.H_t, aux_data.err, LENGTH, BLOCK_SIZE, aux_data.aux);
 
     for(i = 0; i < LENGTH; i++) {
       block_nlms.filter_w[i] += NLMS_MU * aux_data.aux[i];
     }
     
     // remember a few values
-    // need to make a copy of filter_x because we would like to change a data structure while iterating
-    // over it
-    for(i = 0; i < FILTER_X_SIZE; i++) {
-      aux_data.temp_filter_x[i] = block_nlms.filter_x[i]; 
-    }
+    // need to make a copy of filter_x because we would like to change a data structure 
+    // while iterating over it
+    plp_copy_f32(block_nlms.filter_x, aux_data.aux, (LENGTH - 1));
+    
     for(i = 0; i < (LENGTH - 1); i++) {
-      block_nlms.filter_x[FILTER_X_SIZE - LENGTH + 1 + i] = aux_data.temp_filter_x[i]; 
+      block_nlms.filter_x[FILTER_X_SIZE - LENGTH + 1 + i] = aux_data.aux[i]; 
     }
   }
 }
@@ -156,12 +155,13 @@ void adaptive_filters_block_nlms() {
 
 void init() {
 
+    int i;
     // move data from L2 to L1
-    for(int i = 0; i < LENGTH; i++) {
+    for(i = 0; i < LENGTH; i++) {
       input_data.w[i] = w_L2[i];
       input_data.filter_w_check[i] = filter_w_check_L2[i];
     }
-    for(int i = 0; i < N_SAMPLES; i++) {
+    for(i = 0; i < N_SAMPLES; i++) {
       input_data.x[i] = x_L2[i];
       input_data.input[i] = input_L2[i];
 
@@ -172,7 +172,7 @@ void init() {
 
     // normalize w
     float norm_2 = norm_L2(input_data.w, LENGTH);
-    for(int i = 0; i < LENGTH; i++) {
+    for(i = 0; i < LENGTH; i++) {
       input_data.w[i] /= norm_2;
     }
 

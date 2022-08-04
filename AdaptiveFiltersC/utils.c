@@ -65,11 +65,12 @@ void eye(float element, float * matrix, int n) {
 }
 
 // matrix-vector product
-void gemv(int size_N, int size_M, float* mat_i, float* vec_1, float* vec_o) {
+void gemv(float* mat_i, float* vec_1, int size_N, int size_M, float* vec_o) {
+    int i, j;
     float temp;
-    for (int i=0; i<size_N; i++){
+    for (i=0; i<size_N; i++){
       temp = 0.0f;
-      for (int j=0; j<size_M; j++){
+      for (j=0; j<size_M; j++){
           temp += mat_i[i*size_M+j] * vec_1[j];
       }
       vec_o[i] = temp;
@@ -77,48 +78,14 @@ void gemv(int size_N, int size_M, float* mat_i, float* vec_1, float* vec_o) {
 }
 
 // vectorial product
-void outer(int size_N, int size_M, float* vec_1, float* vec_2, float* matrix_o) {
-    for (int i=0; i<size_N; i++){
-      for (int j=0; j<size_M; j++){
-          matrix_o[i*size_N + j] = 0.0f;
-          matrix_o[i*size_N + j] += vec_1[i] * vec_2[j];
+void outer(float* vec_1, float* vec_2, int size_N, int size_M, float* matrix_o) {
+    int i,j;
+    float temp;
+    for(i = 0; i < size_N; i++){
+      for(j = 0; j < size_M; j++){
+          temp = 0.0f;
+          temp += vec_1[i] * vec_2[j];
+          matrix_o[i*size_N + j] = temp;
       }
-    }
-}
-
-// transpose matrix
-void mat_transpose(float * mat_in, float * mat_out, int sizeM, int sizeN) {
-  for (int i = 0; i < sizeM; i++) {
-    for (int j = 0; j < sizeN; j++) {
-      mat_out[i*sizeN+j] = mat_in[j*sizeM+i];
-    }
-  }
-}
-
-// matrix multiplication
-void matMul(float * pSrcA, float  * pSrcB, float * pDstC, int m, int n, int o) {
-    int i, j, k;
-
-    for (k = 0; k < o; k++) {
-        for (i = 0; i < m; i++) {
-            float sum = 0.0f;
-            for (j = 0; j < n; j++) {
-                float a = pSrcA[i * n + j];
-                float b = pSrcB[j * o + k];
-                sum += a * b;
-            }
-            pDstC[i * o + k] = sum;
-        }
-    }
-}
-
-// matrix addition
-void matAdd(float * pSrcA, float  * pSrcB, float * pDstC, int m, int n, int o) {
-    int i, j;
-
-    for (j = 0; j < n; j++) {
-        for (i = 0; i < m; i++) {
-            pDstC[i * o + j] = pSrcA[i * o + j] + pSrcB[i * o + j]; 
-        }
     }
 }

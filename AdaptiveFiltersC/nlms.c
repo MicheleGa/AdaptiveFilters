@@ -1,4 +1,5 @@
 #include "pmsis.h"
+#include "plp_math.h"
 #include "data.h"
 #include "perf.h"
 #include "utils.h"
@@ -52,10 +53,10 @@ PI_L1 float diff[LENGTH];
 
 void update(float x_n, float d_n) {
   int i; 
-  float acc = 0.0f, acc_1 = 0.0f;
+  float acc = 0.0f, acc_1 = 0.0f, temp;
   
   // shift elements in array on the right (last elemnt thrown away)
-  for(i = (LENGTH-1); i > 0; i--) {
+  for(i = (LENGTH - 1); i > 0; i--) {
     nlms.filter_x[i] = nlms.filter_x[i-1];
   }
   nlms.filter_x[0] = x_n;
@@ -63,8 +64,9 @@ void update(float x_n, float d_n) {
   // inner product filter_x and filter_w
   // and between fitler_x and itself
   for(i = 0; i < LENGTH; i++) {
-    acc += nlms.filter_x[i] * nlms.filter_w[i];
-    acc_1 += nlms.filter_x[i] * nlms.filter_x[i];
+    temp = nlms.filter_x[i];
+    acc += temp * nlms.filter_w[i];
+    acc_1 += temp * temp;
   }
   acc = NLMS_MU * (d_n - acc);
 
@@ -91,12 +93,13 @@ void adaptive_filters_nlms() {
 
 void init() {
 
+    int i;
     // move data from L2 to L1
-    for(int i = 0; i < LENGTH; i++) {
+    for(i = 0; i < LENGTH; i++) {
       input_data.w[i] = w_L2[i];
       input_data.filter_w_check[i] = filter_w_check_L2[i];
     }
-    for(int i = 0; i < N_SAMPLES; i++) {
+    for(i = 0; i < N_SAMPLES; i++) {
       input_data.x[i] = x_L2[i];
       input_data.input[i] = input_L2[i];
 
@@ -107,7 +110,7 @@ void init() {
 
     // normalize w
     float norm_2 = norm_L2(input_data.w, LENGTH);
-    for(int i = 0; i < LENGTH; i++) {
+    for(i = 0; i < LENGTH; i++) {
       input_data.w[i] /= norm_2;
     }
 
