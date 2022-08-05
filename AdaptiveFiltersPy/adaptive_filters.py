@@ -32,7 +32,7 @@ with open(results_file, 'a') as rec_file:
 
     # parameters
     length = 16  # the unknown filter length
-    n_samples = 512  # the number of samples to run
+    n_samples = 2048  # the number of samples to run
     SNR = 15  # signal to noise ratio
 
     # the unknown filter (unit norm)
