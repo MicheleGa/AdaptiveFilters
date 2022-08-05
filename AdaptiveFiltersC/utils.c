@@ -34,17 +34,19 @@ void print_array_2d(float * arr, int n, int m) {
 // calculate norm-2 (scalar)
 float norm_L2(float * vect, int n) {
   
-  float norm_2 = 0.0f;
+  float norm_2, temp;
   
   for(int i = 0; i < n; i++) {
-      norm_2 += vect[i] * vect[i];
+      temp = vect[i]; 
+      norm_2 += temp * temp;
   }
-
+  
   return sqrt(norm_2);
 }
 
 // just a numpy-zeros-like function
 void zeros(float * arr, int n) {
+
   for(int i = 0; i < n; i++) {
     arr[i] = 0.0f;
   }

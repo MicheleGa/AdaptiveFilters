@@ -99,6 +99,7 @@ void init() {
       input_data.w[i] = w_L2[i];
       input_data.filter_w_check[i] = filter_w_check_L2[i];
     }
+
     for(i = 0; i < N_SAMPLES; i++) {
       input_data.x[i] = x_L2[i];
       input_data.input[i] = input_L2[i];
@@ -124,7 +125,6 @@ void init() {
     #ifdef DEBUG
     zeros(error, N_SAMPLES);
     #endif
-
 }
 
 void cluster_fn() {
@@ -147,24 +147,27 @@ void cluster_fn() {
 
   // end of the performance statistics loop
   PRINT_STATS();
+  
+  if(pi_core_id() == 0) {
+    #ifdef DEBUG
+    // check the result
+    printf("Final error: %f\n", error[N_SAMPLES - 1]);
+    printf("Ground truth error: %f\n", input_data.error_check[N_SAMPLES - 1]);
+    #endif
+  
+    // final filter weights
+    printf("Final filter w:\n");
+    print_array(nlms.filter_w, LENGTH);
+    printf("Ground truth filter w:\n");
+    print_array(input_data.filter_w_check, LENGTH);
 
-  #ifdef DEBUG
-  // check the result
-  printf("Final error: %f\n", error[N_SAMPLES - 1]);
-  printf("Ground truth error: %f\n", input_data.error_check[N_SAMPLES - 1]);
-  #endif
-
-  // final filter weights
-  printf("Final filter w:\n");
-  print_array(nlms.filter_w, LENGTH);
-  printf("Ground truth filter w:\n");
-  print_array(input_data.filter_w_check, LENGTH);
-
-  // checksum
-  int errors_counter = check(nlms.filter_w, input_data.filter_w_check, LENGTH);
-  if(errors_counter > 0) 
-    printf("You got %d errors on final filter w array, with tollerance %d.\n", errors_counter, TOL);
-  errors_counter = 0;
+    // checksum
+    int errors_counter = check(nlms.filter_w, input_data.filter_w_check, LENGTH);
+    if(errors_counter > 0) 
+      printf("You got %d errors on final filter w array, with tollerance %d.\n", errors_counter, TOL);
+    errors_counter = 0;
+  }
+  pi_cl_team_barrier();
 
   pmsis_exit(0);
 }
