@@ -32,14 +32,12 @@ with open(results_file, 'a') as rec_file:
 
     # parameters
     length = 16  # the unknown filter length
-    n_samples = 256  # the number of samples to run
+    n_samples = 2048  # the number of samples to run
     SNR = 15  # signal to noise ratio
 
     # the unknown filter (unit norm)
-    w = list(np.random.randn(length - 1))
-    w.append(0.0)
-    w = np.array(w)
-
+    w = np.random.randn(length)
+    
     rec_file.write(get_string_to_record(desc='Unknown filter',
                                         data=w,
                                         data_name='w',
