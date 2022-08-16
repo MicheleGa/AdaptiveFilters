@@ -57,3 +57,29 @@ Notice that when a portion of *update* is surround with performance counters, ex
 |filter_w update (vector by scalar)|125-127|285|73|284|1|0|0|198|
 |shift (plp_copy)|132|115|50|125|0|0|15|55|
 |shift (copy some values)|134-136|139|37|149|0|0|0|110|
+
+## Block RLS
+
+|code portion|lines|total cycles|instructions|active cycles|external loads(L2+synch)|TCDM cont|LS stalls|I$ misses|
+|---|---|---|---|---|---|---|---|---|
+|whole code|all|11324335|9053467|11324379|2304|0|1980416|2750|
+|8 iterations|all|46081|35393|46125|9|0|7736|1870|
+|buffers update|87-91|51|24|50|1|0|0|0|
+|hankel matrix H|102-109|804|481|802|0|0|36|253|
+|H gemv filter_w|112|749|504|748|0|0|128|110|
+|calculate error (difference)|114-116|154|39|153|0|0|0|110|
+|transpose H|119|566|331|565|0|0|128|99|
+|gain vector (pi = matrix mult P * H_t)|122|10162|7911|10150|0|0|2048|165|
+|gain vector (transpose pi)|125|570|379|569|0|0|128|55|
+|gain vector (aux = matrix mult H * pi)|128|5086|3974|5074|0|0|1024|55|
+|gain vector (aux1 = diag + aux)|131|442|301|430|0|0|1|121|
+|gain vector (aux = transpose aux)|132|318|202|317|0|0|64|44|
+|gain vector (aux1 = inv aux)|141|6556|4586|6555|1|0|836|363|
+|gain vector (g = matrix mult aux1 * pi_t)|142|5866|4743|5685|0|0|1024|77|
+|gain vector (aux = transpose pi)|143|541|330|529|0|0|128|77|
+|filter_w update (gemv)|146|832|600|842|0|0|128|110|
+|filter_w update (sum)|148-150|287|75|275|0|0|0|198|
+|P update (outer = mat mult g * pi_t)|155|11641|9447|11640|0|0|2048|110|
+|P update (element-wise sub and mult)|160-165|1541|1307|1540|0|0|0|231|
+|shift (plp_copy)|170|148|50|147|0|0|15|77|
+|shift (copy some values)|172-174|139|37|138|0|0|0|99|

@@ -82,7 +82,7 @@ PI_L1 float diff[LENGTH];
 int iteration = 0;
 
 void update(float x_n, float d_n) {
-
+  
   // buffers update
   iteration++;
   int slot = BLOCK_SIZE - ((iteration - 1) % BLOCK_SIZE) - 1;
