@@ -5,15 +5,12 @@
 #include "perf.h"
 #include "utils.h"
 
-
-// algorithm specific constants
 // algorithm specific constants
 #define RLS_LMBD 1.0f
 #define RLS_LMBD_INV 1.0f / RLS_LMBD
 #define RLS_DELTA 2.0f
 #define BLOCK_SIZE 8
 #define FILTER_X_SIZE (BLOCK_SIZE + LENGTH - 1)
-
 
 // adaptive filter data structures
 PI_L1 struct AdaptiveFilter{
@@ -85,7 +82,8 @@ PI_L1 float diff[LENGTH];
 int iteration = 0;
 
 void update(float x_n, float d_n) {
-  
+
+  // buffers update
   iteration++;
   int slot = BLOCK_SIZE - ((iteration - 1) % BLOCK_SIZE) - 1;
   
@@ -146,15 +144,19 @@ void update(float x_n, float d_n) {
 
     // update filter w
     gemv(aux_data.pi, aux_data.err, LENGTH, BLOCK_SIZE, aux_data.aux2);
+
     for(i = 0; i < LENGTH; i++) {
       block_rls.filter_w[i] += aux_data.aux2[i];
     }
 
     // update P matrix
     // be ware: pi contains the results of A^(-1)*b, i.e. g
+    // vectorial product
     plp_mat_mult_f32(aux_data.pi, aux_data.pi_t, LENGTH, BLOCK_SIZE, LENGTH, block_rls.outer_buff);
     
     acc = block_rls.lmbd_inv_pwr[BLOCK_SIZE];
+
+    // element-wise subtraction and multiplication
     for(i = 0; i < LENGTH; i++) {
       for(int j = 0; j < LENGTH; j++) {
         block_rls.P[i * LENGTH + j] -= block_rls.outer_buff[i * LENGTH + j];
@@ -280,30 +282,32 @@ void cluster_fn() {
   // workload
   adaptive_filters_block_rls();
   
-
   // stop measuring
   STOP_STATS();
 
   // end of the performance statistics loop
   PRINT_STATS();
   
-  #ifdef DEBUG
-  // check the result
-  printf("Final error: %f\n", error[N_SAMPLES - 1]);
-  printf("Ground truth error: %f\n", input_data.error_check[N_SAMPLES - 1]);
-  #endif
+  if(pi_core_id() == 0) {
+    #ifdef DEBUG
+    // check the result
+    printf("Final error: %f\n", error[N_SAMPLES - 1]);
+    printf("Ground truth error: %f\n", input_data.error_check[N_SAMPLES - 1]);
+    #endif
+  
+    // final filter weights
+    printf("Final filter w:\n");
+    print_array(block_rls.filter_w, LENGTH);
+    printf("Ground truth filter w:\n");
+    print_array(input_data.filter_w_check, LENGTH);
 
-  // final filter weights
-  printf("Final filter w:\n");
-  print_array(block_rls.filter_w, LENGTH);
-  printf("Ground truth filter w:\n");
-  print_array(input_data.filter_w_check, LENGTH);
-
-  // checksum
-  int errors_counter = check(block_rls.filter_w, input_data.filter_w_check, LENGTH);
-  if(errors_counter > 0) 
-    printf("You got %d errors on final filter w array, with tollerance %d.\n", errors_counter, TOL);
-  errors_counter = 0;
+    // checksum
+    int errors_counter = check(block_rls.filter_w, input_data.filter_w_check, LENGTH);
+    if(errors_counter > 0) 
+      printf("You got %d errors on final filter w array, with tollerance %d.\n", errors_counter, TOL);
+    errors_counter = 0;
+  }
+  pi_cl_team_barrier();
 
   pmsis_exit(0);
 }

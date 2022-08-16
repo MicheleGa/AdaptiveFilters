@@ -4,10 +4,8 @@
 #include "perf.h"
 #include "utils.h"
 
-
 // algorithm specific constants
 #define NLMS_MU 0.5f
-
 
 // adaptive filter data structures
 PI_L1 struct AdaptiveFilter{
@@ -50,8 +48,8 @@ PI_L1 float error[N_SAMPLES];
 PI_L1 float diff[LENGTH];
 #endif
 
-
-void update(float x_n, float d_n) {
+void __attribute__((noinline)) update(float x_n, float d_n) {
+  
   int i; 
   float acc = 0.0f, acc_1 = 0.0f, temp;
   
@@ -62,20 +60,24 @@ void update(float x_n, float d_n) {
   nlms.filter_x[0] = x_n;
 
   // inner product filter_x and filter_w
-  // and between fitler_x and itself
   for(i = 0; i < LENGTH; i++) {
-    temp = nlms.filter_x[i];
-    acc += temp * nlms.filter_w[i];
-    acc_1 += temp * temp;
+    acc += nlms.filter_x[i] * nlms.filter_w[i];
   }
+
+  // inner product between filter_x and itself
+  for(i = 0; i < LENGTH; i++) {
+    acc_1 += nlms.filter_x[i] * nlms.filter_x[i];
+  }
+  
   acc = NLMS_MU * (d_n - acc);
 
+  // update coefficients
   for(i = 0; i < LENGTH; i++) {
     nlms.filter_w[i] += acc * (nlms.filter_x[i] / acc_1);
   }
 }
 
-void adaptive_filters_nlms() {
+void __attribute__((noinline)) adaptive_filters_nlms() {
       
     for(int i = 0; i < N_SAMPLES; i++) {
       // update filter_x, then d, and eventually filter_w

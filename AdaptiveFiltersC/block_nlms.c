@@ -5,12 +5,10 @@
 #include "perf.h"
 #include "utils.h"
 
-
 // algorithm specific constants
 #define NLMS_MU 0.001f 
 #define BLOCK_SIZE 8
 #define FILTER_X_SIZE (BLOCK_SIZE + LENGTH - 1)
-
 
 // adaptive filter data structures
 PI_L1 struct AdaptiveFilter{
@@ -68,8 +66,9 @@ PI_L1 float diff[LENGTH];
 // -> modulo operation inside update is problematic
 int iteration = 0;
 
-void update(float x_n, float d_n) {
+void __attribute__((noinline)) update(float x_n, float d_n) {
   
+  // buffers update
   iteration++;
   int slot = BLOCK_SIZE - ((iteration - 1) % BLOCK_SIZE) - 1;
   
@@ -138,7 +137,7 @@ void update(float x_n, float d_n) {
   }
 }
 
-void adaptive_filters_block_nlms() {
+void __attribute__((noinline)) adaptive_filters_block_nlms() {
     for(int i = 0; i < N_SAMPLES; i++) {
       // update filter_x, then d, and eventually filter_w
       update(input_data.x[i], input_data.input[i]);
@@ -212,23 +211,26 @@ void cluster_fn() {
   // end of the performance statistics loop
   PRINT_STATS();
   
-  #ifdef DEBUG
-  // check the result
-  printf("Final error: %f\n", error[N_SAMPLES - 1]);
-  printf("Ground truth error: %f\n", input_data.error_check[N_SAMPLES - 1]);
-  #endif
+  if(pi_core_id() == 0) {
+    #ifdef DEBUG
+    // check the result
+    printf("Final error: %f\n", error[N_SAMPLES - 1]);
+    printf("Ground truth error: %f\n", input_data.error_check[N_SAMPLES - 1]);
+    #endif
+  
+    // final filter weights
+    printf("Final filter w:\n");
+    print_array(block_nlms.filter_w, LENGTH);
+    printf("Ground truth filter w:\n");
+    print_array(input_data.filter_w_check, LENGTH);
 
-  // final filter weights
-  printf("Final filter w:\n");
-  print_array(block_nlms.filter_w, LENGTH);
-  printf("Ground truth filter w:\n");
-  print_array(input_data.filter_w_check, LENGTH);
-
-  // checksum
-  int errors_counter = check(block_nlms.filter_w, input_data.filter_w_check, LENGTH);
-  if(errors_counter > 0) 
-    printf("You got %d errors on final filter w array, with tollerance %d.\n", errors_counter, TOL);
-  errors_counter = 0;
+    // checksum
+    int errors_counter = check(block_nlms.filter_w, input_data.filter_w_check, LENGTH);
+    if(errors_counter > 0) 
+      printf("You got %d errors on final filter w array, with tollerance %d.\n", errors_counter, TOL);
+    errors_counter = 0;
+  }
+  pi_cl_team_barrier();
 
   pmsis_exit(0);
 }
