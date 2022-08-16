@@ -28,8 +28,14 @@ Notice that when a portion of *update* is surround with performance counters, ex
 |code portion|lines|total cycles|instructions|active cycles|external loads(L2+synch)|TCDM cont|LS stalls|I$ misses|
 |---|---|---|---|---|---|---|---|---|
 |whole code|all|623114|358434|623147|2048|0|36864|517|
-||||||||||
-||||||||||
-||||||||||
-||||||||||
-||||||||||
+|1 iteration|all|6328|4454|6361|1|0|786|990|
+|shift||155|50|201|0|0|0|143|
+|filter_x dot product filter_w||227|57|215|0|0|0|154|
+|gain vector (element-wise filter_x * LMBDA_INV)||154|39|153|0|0|0|110|
+|gain vector (gemv)||1345|985|1344|0|0|256|99|
+|gain vector (filter_x dot product gain vector)||213|56|212|0|0|0|154|
+|gain vector (element wise div)||324|55|323|0|0|16|154|
+|filter_w update||274|73|273|0|0|0|198|
+|P update (gemv)||1290|985|1300|0|0|256|55|
+|P update (outer)||1555|1195|1554|0|0|256|99|
+|P update (element-wise sub and mult)||1230|1051|1229|0|0|0|187|
