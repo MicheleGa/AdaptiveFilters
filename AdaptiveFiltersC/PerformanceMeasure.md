@@ -1,6 +1,6 @@
 # Performance Recording
 
-In this file, performances of the following algorithms are reported: Normalized Least Mean Sqaures, Recursive Least Squares, and the respective block forms.
+In this file, performances of the following algorithms are analyzed: Normalized Least Mean Squares, Recursive Least Squares, and the respective block forms.
 Firstly, the performance of each single algorithm that runs on the whole 2048 samples with a 16-bit filter are reported (no compiler inlinig).
 Secondly, a fine-grained recording of each portion of code that composes the algotihms are registered with the following methodology:
 
@@ -10,7 +10,7 @@ Secondly, a fine-grained recording of each portion of code that composes the alg
 > - initialize the performance counters
 > - run the code: reset and start the perfomance counters before every target protion, while stop and print the statistics after the end of the target porotion
 
-Notice that when a portion of *update* is surround with performance counters, execution flow will change and some compiler optimizations are no more effective.
+Notice that when a portion of *update* is surrounded with performance counters, execution flow will change and some compiler optimizations are no more effective.
 
 ## Normalized Least Mean Squares
 
