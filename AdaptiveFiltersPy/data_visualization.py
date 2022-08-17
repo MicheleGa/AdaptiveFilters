@@ -2,10 +2,9 @@ import os
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-
+sns.set(rc = {'figure.figsize':(16,10)})
 
 plots_folder = './graphs'
-
 
 def print_graph(df: pd.DataFrame,
                 x_axis: str,
@@ -51,7 +50,7 @@ if __name__ == '__main__':
     # first row is the full code, so we don't want it
     print('NLMS performances:')
     print(nlms_df)
-    print_graph(df=nlms_df.loc[1:, :],
+    print_graph(df=nlms_df.iloc[1:, :],
                 x_axis='code_portion',
                 title='NLMS Fine-grained Performances',
                 file_name='nlms_1_it_code_perf')
@@ -59,7 +58,7 @@ if __name__ == '__main__':
     # first row is the full code, so we don't want it
     print('RLS performances:')
     print(rls_df)
-    print_graph(df=rls_df.loc[1:, :],
+    print_graph(df=rls_df.iloc[1:, :],
                 x_axis='code_portion',
                 title='RLS Fine-grained Performances',
                 file_name='rls_1_it_code_perf')
@@ -67,7 +66,7 @@ if __name__ == '__main__':
     # first row is full code, so we don't want it
     print('Block NLMS performances:')
     print(block_nlms_df)
-    print_graph(df=block_nlms_df.loc[1:, :],
+    print_graph(df=block_nlms_df.iloc[1:, :],
                 x_axis='code_portion',
                 title='Block NLMS Fine-grained Performances',
                 file_name='block_nlms_1_it_code_perf')
@@ -75,7 +74,7 @@ if __name__ == '__main__':
     # first row is full code, so we don't want it
     print('Block RLS performances:')
     print(block_rls_df)
-    print_graph(df=block_rls_df.loc[1:, :],
+    print_graph(df=block_rls_df.iloc[1:, :],
                 x_axis='code_portion',
                 title='Block RLS Fine-grained Performances',
                 file_name='block_rls_1_it_code_perf')
