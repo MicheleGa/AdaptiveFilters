@@ -71,9 +71,11 @@ void __attribute__((noinline)) update(float x_n, float d_n) {
   
   acc = NLMS_MU * (d_n - acc);
 
+  float val = acc / acc_1;
+
   // update coefficients
   for(i = 0; i < LENGTH; i++) {
-    nlms.filter_w[i] += acc * (nlms.filter_x[i] / acc_1);
+    nlms.filter_w[i] += val * nlms.filter_x[i];
   }
 }
 

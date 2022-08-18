@@ -69,25 +69,50 @@ void eye(float element, float * matrix, int n) {
 // matrix-vector product
 void gemv(float* mat_i, float* vec_1, int size_N, int size_M, float* vec_o) {
     int i, j;
-    float temp;
-    for (i=0; i<size_N; i++){
+    float temp, temp_1, temp_2, temp_3;
+    for (i = 0; i < size_N; i += 4){
       temp = 0.0f;
-      for (j=0; j<size_M; j++){
-          temp += mat_i[i*size_M+j] * vec_1[j];
+      temp_1 = 0.0f;
+      temp_2 = 0.0f;
+      temp_3 = 0.0f;
+      for (j = 0; j < size_M; j++){
+          float shared = vec_1[j];
+
+          temp += mat_i[i*size_M+j] * shared;
+          temp_1 += mat_i[(i+1)*size_M+j] * shared;
+          temp_2 += mat_i[(i+2)*size_M+j] * shared;
+          temp_3 += mat_i[(i+3)*size_M+j] * shared;
       }
       vec_o[i] = temp;
+      vec_o[i+1] = temp_1;
+      vec_o[i+2] = temp_2;
+      vec_o[i+3] = temp_3;
     }
 }
 
 // vectorial product
 void outer(float* vec_1, float* vec_2, int size_N, int size_M, float* matrix_o) {
     int i,j;
-    float temp;
-    for(i = 0; i < size_N; i++){
+    float temp, temp_1, temp_2, temp_3;
+    for(i = 0; i < size_N; i += 2){
       for(j = 0; j < size_M; j++){
+          // be ware: need a 0.0 temp var to make correct vectorial product
           temp = 0.0f;
-          temp += vec_1[i] * vec_2[j];
+          temp_1 = 0.0f;
+          temp_2 = 0.0f;
+          temp_3 = 0.0f;
+
+          float shared = vec_2[j];
+
+          temp += vec_1[i] * shared;
+          temp_1 += vec_1[i+1] * shared;
+          temp_2 += vec_1[i+2] * shared;
+          temp_3 += vec_1[i+3] * shared;
+          
           matrix_o[i*size_N + j] = temp;
+          matrix_o[(i+1)*size_N + j] = temp_1;
+          matrix_o[(i+2)*size_N + j] = temp_2;
+          matrix_o[(i+3)*size_N + j] = temp_3;
       }
     }
 }
