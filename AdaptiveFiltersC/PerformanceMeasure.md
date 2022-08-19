@@ -14,7 +14,7 @@ Notice that when a portion of *update* is surrounded with performance counters, 
 
 ## Normalized Least Mean Squares
 
-|code portion|lines|total cycles|instructions|active cycles|external loads(L2+synch)|TCDM cont|LS stalls|I$ misses|
+|code portion|lines|total cycles|instructions|active cycles|external loads(L2+synch)|TCDM cont|LD stalls|I$ misses|
 |---|---|---|---|---|---|---|---|---|
 |whole code|all|623114|358434|623147|2048|0|36864|517|
 |1 iteration|all|768|196|801|1|0|18|473|
@@ -25,7 +25,7 @@ Notice that when a portion of *update* is surrounded with performance counters, 
 
 ## Recursive Least Squares
 
-|code portion|lines|total cycles|instructions|active cycles|external loads(L2+synch)|TCDM cont|LS stalls|I$ misses|
+|code portion|lines|total cycles|instructions|active cycles|external loads(L2+synch)|TCDM cont|LD stalls|I$ misses|
 |---|---|---|---|---|---|---|---|---|
 |whole code|all|10929288|9078818|10929321|2048|0|1609728|1155|
 |1 iteration|all|6328|4454|6361|1|0|786|990|
@@ -42,7 +42,7 @@ Notice that when a portion of *update* is surrounded with performance counters, 
 
 ## Block Normalized LMS
 
-|code portion|lines|total cycles|instructions|active cycles|external loads(L2+synch)|TCDM cont|LS stalls|I$ misses|
+|code portion|lines|total cycles|instructions|active cycles|external loads(L2+synch)|TCDM cont|LD stalls|I$ misses|
 |---|---|---|---|---|---|---|---|---|
 |whole code|all|1247800|836386|1247833|2304|0|144128|1331|
 |8 iterations|all|6041|3302|6074|9|0|563|1166|
@@ -60,7 +60,7 @@ Notice that when a portion of *update* is surrounded with performance counters, 
 
 ## Block RLS
 
-|code portion|lines|total cycles|instructions|active cycles|external loads(L2+synch)|TCDM cont|LS stalls|I$ misses|
+|code portion|lines|total cycles|instructions|active cycles|external loads(L2+synch)|TCDM cont|LD stalls|I$ misses|
 |---|---|---|---|---|---|---|---|---|
 |whole code|all|11324335|9053467|11324379|2304|0|1980416|2750|
 |8 iterations|all|46081|35393|46125|9|0|7736|1870|

@@ -2,7 +2,7 @@
 APP = adaptive_filters
 
 # SOURCE FILES
-APP_SRCS += main.c rls.c utils.c
+APP_SRCS += main.c block_nlms.c utils.c
 
 # NUMBER OF USED CLUSTER CORES
 CORES ?= 1

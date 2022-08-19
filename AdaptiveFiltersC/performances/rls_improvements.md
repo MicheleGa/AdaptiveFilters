@@ -4,16 +4,7 @@ Optimization hereafter reported are applied considering graphs in the *AdaptiveF
 
 ## gain vector (gemv)
 
-Problem with this portion is its naive implementation of gemv without loop unrolling, causing stalls.
-Naive version performance:
-
-> - total cycles = 1345
-> - instructions = 985
-> - active cycles = 1344
-> - external loads (L2+synch) = 0
-> - TCDM cont = 0
-> - LD stalls = 256
-> - I$ misses = 99
+The problem with this portion is its naive implementation of gemv without loop unrolling, causing stalls.
 
 Loop unroll x2 (on outer loop):
 
@@ -25,6 +16,16 @@ Loop unroll x2 (on outer loop):
 > - LD stalls = 0
 > - I$ misses = 143
 
+Loop unroll x2 (on inner loop):
+
+> - total cycles = 1189
+> - instructions = 1052
+> - active cycles = 1188
+> - external loads (L2+synch) = 0
+> - TCDM cont = 0
+> - LD stalls = 0
+> - I$ misses = 132
+
 Loop unroll x2 x2 (on outer and inner loops):
 
 > - total cycles = 1045
@@ -34,6 +35,16 @@ Loop unroll x2 x2 (on outer and inner loops):
 > - TCDM cont = 0
 > - LD stalls = 0
 > - I$ misses = 187
+
+Loop unroll x4 (on inner loop):
+
+> - total cycles = 1307
+> - instructions = 1148
+> - active cycles = 1306
+> - external loads (L2+synch) = 0
+> - TCDM cont = 0
+> - LD stalls = 0
+> - I$ misses = 154
 
 Loop unroll x4 (on outer loop):
 
@@ -59,48 +70,30 @@ Loop unroll x8 (on outer loop):
 ## P update (gemv)
 
 Same as just made for gain vector (gemv).
-Without unrolling:
-
-> - total cycles = 1290
-> - instructions = 985
-> - active cycles = 1300
-> - external loads (L2+synch) = 0
-> - TCDM cont = 0
-> - LD stalls = 256
-> - I$ misses = 55
 
 Loop unroll x4 (on outer loop):
 
-> - total cycles = 820
+> - total cycles = 853
 > - instructions = 721
-> - active cycles = 830
+> - active cycles = 863
 > - external loads (L2+synch) = 0
 > - TCDM cont = 0
 > - LD stalls = 0
-> - I$ misses = 99
+> - I$ misses = 132
 
 ## P update (outer)
 
 Same problem as gain vector (gemv).
-Without unrolling:
-
-> - total cycles = 1555
-> - instructions = 1195
-> - active cycles = 1554
-> - external loads (L2+synch) = 0
-> - TCDM cont = 0
-> - LD stalls = 256
-> - I$ misses = 99
 
 Loop unroll x4 (on outer loop):
 
-> - total cycles = 748
-> - instructions = 536
-> - active cycles = 747
+> - total cycles = 1096
+> - instructions = 926
+> - active cycles = 1095
 > - external loads (L2+synch) = 0
 > - TCDM cont = 0
-> - LD stalls = 64
-> - I$ misses = 143
+> - LD stalls = 0
+> - I$ misses = 165
 
 ## P update (element-wise sub and mult)
 
@@ -116,10 +109,10 @@ TO-DO:
 
 Overall speed-up with the all 2048 samples:
 
-> - total cycles = 9559363
-> - instructions = 9256994
-> - active cycles = 9559396
+> - total cycles = 7748964
+> - instructions = 7446562
+> - active cycles = 7748997
 > - external loads (L2+synch) = 2048
 > - TCDM cont = 0
 > - LD stalls = 36864
-> - I$ misses = 1342
+> - I$ misses = 1375

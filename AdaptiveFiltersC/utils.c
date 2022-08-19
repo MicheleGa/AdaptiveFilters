@@ -67,15 +67,19 @@ void eye(float element, float * matrix, int n) {
 }
 
 // matrix-vector product
-void gemv(float* mat_i, float* vec_1, int size_N, int size_M, float* vec_o) {
+void gemv(float * mat_i, float * vec_1, int size_N, int size_M, float * vec_o) {
     int i, j;
     float temp, temp_1, temp_2, temp_3;
+
     for (i = 0; i < size_N; i += 4){
+
       temp = 0.0f;
       temp_1 = 0.0f;
       temp_2 = 0.0f;
       temp_3 = 0.0f;
+
       for (j = 0; j < size_M; j++){
+
           float shared = vec_1[j];
 
           temp += mat_i[i*size_M+j] * shared;
@@ -83,6 +87,7 @@ void gemv(float* mat_i, float* vec_1, int size_N, int size_M, float* vec_o) {
           temp_2 += mat_i[(i+2)*size_M+j] * shared;
           temp_3 += mat_i[(i+3)*size_M+j] * shared;
       }
+      
       vec_o[i] = temp;
       vec_o[i+1] = temp_1;
       vec_o[i+2] = temp_2;
@@ -94,7 +99,7 @@ void gemv(float* mat_i, float* vec_1, int size_N, int size_M, float* vec_o) {
 void outer(float* vec_1, float* vec_2, int size_N, int size_M, float* matrix_o) {
     int i,j;
     float temp, temp_1, temp_2, temp_3;
-    for(i = 0; i < size_N; i += 2){
+    for(i = 0; i < size_N; i += 4){
       for(j = 0; j < size_M; j++){
           // be ware: need a 0.0 temp var to make correct vectorial product
           temp = 0.0f;
@@ -115,4 +120,23 @@ void outer(float* vec_1, float* vec_2, int size_N, int size_M, float* matrix_o) 
           matrix_o[(i+3)*size_N + j] = temp_3;
       }
     }
+}
+
+void mat_transpose(float * mat_in, int sizeN, int sizeM, float * mat_out){
+  
+  float temp, temp_1, temp_2, temp_3;
+
+  for (int i = 0; i < sizeM; i+=4) {
+    for (int j = 0; j < sizeN; j++) {
+      temp = mat_in[j * sizeM + i];
+      temp_1 = mat_in[j * sizeM + (i+1)];
+      temp_2 = mat_in[j * sizeM + (i+2)];
+      temp_3 = mat_in[j * sizeM + (i+3)];
+      
+      mat_out[i * sizeN + j] = temp;
+      mat_out[(i+1) * sizeN + j] = temp_1;
+      mat_out[(i+2) * sizeN + j] = temp_2;
+      mat_out[(i+3) * sizeN + j] = temp_3;
+    }
+  }
 }

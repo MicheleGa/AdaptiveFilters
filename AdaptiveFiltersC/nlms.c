@@ -51,7 +51,7 @@ PI_L1 float diff[LENGTH];
 void __attribute__((noinline)) update(float x_n, float d_n) {
   
   int i; 
-  float acc = 0.0f, acc_1 = 0.0f, temp;
+  float acc = 0.0f, acc_1 = 0.0f;
   
   // shift elements in array on the right (last elemnt thrown away)
   for(i = (LENGTH - 1); i > 0; i--) {

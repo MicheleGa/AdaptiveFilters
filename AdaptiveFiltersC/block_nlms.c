@@ -68,6 +68,11 @@ int iteration = 0;
 
 void __attribute__((noinline)) update(float x_n, float d_n) {
   
+  printf("%d\n", iteration);
+  INIT_STATS();
+  RESET_STATS();
+  START_STATS();
+
   // buffers update
   iteration++;
   int slot = BLOCK_SIZE - ((iteration - 1) % BLOCK_SIZE) - 1;
@@ -75,12 +80,18 @@ void __attribute__((noinline)) update(float x_n, float d_n) {
   block_nlms.filter_x[slot] = x_n;
   block_nlms.block[slot] = d_n;
 
+  STOP_STATS();
+  PRINT_STATS();
+  
   // perform an update of the coefficients every BLOCK_SIZE samples
   if(iteration % BLOCK_SIZE == 0) {
     
     int i,j; 
     float acc = 0.0f, acc1 = 0.0f;
-  
+    
+    RESET_STATS();
+    START_STATS();
+
     // build hankel matrix: the hankel matrix has constant anti-diagonals, 
     // with c as its first column (first BLOCK_SIZE elements from block_nlms.filter_x) and 
     // r as its last row (last LENGTH elements from block_nlms.filter_x)
@@ -92,13 +103,28 @@ void __attribute__((noinline)) update(float x_n, float d_n) {
         aux_data.H[i * LENGTH + j + k] = block_nlms.filter_x[BLOCK_SIZE + k];
       }
     }
-    
+
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
+
     // calculate error
     gemv(aux_data.H, block_nlms.filter_w, BLOCK_SIZE, LENGTH, aux_data.err);
     
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
+
     for(i = 0; i < BLOCK_SIZE; i++) {
       aux_data.err[i] = block_nlms.block[i] - aux_data.err[i]; 
     }
+
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
 
     // calculate norm 2 along axis 1 (no final sqrt) for matrix H
     for(i = 0; i < BLOCK_SIZE; i++) {
@@ -110,8 +136,18 @@ void __attribute__((noinline)) update(float x_n, float d_n) {
       aux_data.norm[i] = acc;
     }
     
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
+
     // transpose e divide by norm
-    plp_mat_trans_f32(aux_data.H, BLOCK_SIZE, LENGTH, aux_data.H_t);
+    mat_transpose(aux_data.H, BLOCK_SIZE, LENGTH, aux_data.H_t);
+    
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
 
     for(i = 0; i < LENGTH; i++) {
       for(j = 0; j < BLOCK_SIZE; j++) {
@@ -119,26 +155,52 @@ void __attribute__((noinline)) update(float x_n, float d_n) {
       }
     }
 
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
+
     // update coefficients
     gemv(aux_data.H_t, aux_data.err, LENGTH, BLOCK_SIZE, aux_data.aux);
+
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
 
     for(i = 0; i < LENGTH; i++) {
       block_nlms.filter_w[i] += NLMS_MU * aux_data.aux[i];
     }
     
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
+
     // remember a few values
     // need to make a copy of filter_x because we would like to change a data structure 
     // while iterating over it
-    plp_copy_f32(block_nlms.filter_x, aux_data.aux, (LENGTH - 1));
     
+    for(i = 0; i < (LENGTH - 1); i++) {
+      aux_data.aux[i] = block_nlms.filter_x[i];
+    }
+    
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
+
     for(i = 0; i < (LENGTH - 1); i++) {
       block_nlms.filter_x[FILTER_X_SIZE - LENGTH + 1 + i] = aux_data.aux[i]; 
     }
+
+    STOP_STATS();
+    PRINT_STATS();
   }
 }
 
 void __attribute__((noinline)) adaptive_filters_block_nlms() {
-    for(int i = 0; i < N_SAMPLES; i++) {
+    for(int i = 0; i < BLOCK_SIZE; i++) {
       // update filter_x, then d, and eventually filter_w
       update(input_data.x[i], input_data.input[i]);
 
@@ -210,7 +272,7 @@ void cluster_fn() {
 
   // end of the performance statistics loop
   PRINT_STATS();
-  
+
   if(pi_core_id() == 0) {
     #ifdef DEBUG
     // check the result

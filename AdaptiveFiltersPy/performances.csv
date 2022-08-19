@@ -1,4 +1,4 @@
-algorithm,code portion,lines,total cycles,instructions,active cycles,external loads(L2+synch),TCDM cont,LS stalls,I$ misses
+algorithm,code portion,lines,total cycles,instructions,active cycles,external loads(L2+synch),TCDM cont,LD stalls,I$ misses
 nlms,whole code,all,623114,358434,623147,2048,0,36864,517
 nlms,1 iteration,all,768,196,801,1,0,18,473
 nlms,shift,57-60,153,50,186,0,0,0,132
