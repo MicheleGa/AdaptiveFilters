@@ -100,36 +100,34 @@ void update(float x_n, float d_n) {
     // with c as its first column (first BLOCK_SIZE elements from block_rls.filter_x) and 
     // r as its last row (last LENGTH elements from block_rls.filter_x)
     for(i = 0; i < BLOCK_SIZE; i++) {
-      for(j = 0; j < (BLOCK_SIZE - i); j++) {
-        aux_data.H[i*LENGTH+j] = block_rls.filter_x[j+i];
-      }
-      for(int k = 0; k < (LENGTH - j); k++) {
-        aux_data.H[i*LENGTH+j+k] = block_rls.filter_x[BLOCK_SIZE+k];
+      for(j = 0; j < LENGTH; j++) {
+        aux_data.H[i * LENGTH + j] = block_rls.filter_x[j + i];
       }
     }
-    
+
     // calculate error
     gemv(aux_data.H, block_rls.filter_w, BLOCK_SIZE, LENGTH, aux_data.err);
-    
+
     for(i = 0; i < BLOCK_SIZE; i++) {
       aux_data.err[i] = block_rls.block[i] - aux_data.err[i]; 
     }
-
+    
     // transpose 
-    plp_mat_trans_f32(aux_data.H, BLOCK_SIZE, LENGTH, aux_data.H_t);
+    mat_transpose(aux_data.H, BLOCK_SIZE, LENGTH, aux_data.H_t);
 
     // calculate gain vector
-    plp_mat_mult_f32(block_rls.P, aux_data.H_t, LENGTH, LENGTH, BLOCK_SIZE, aux_data.pi);
+    mat_mul_f32(block_rls.P, aux_data.H_t, LENGTH, LENGTH, BLOCK_SIZE, aux_data.pi);
 
     // transpose pi
-    plp_mat_trans_f32(aux_data.pi, LENGTH, BLOCK_SIZE, aux_data.pi_t);
+    mat_transpose(aux_data.pi, LENGTH, BLOCK_SIZE, aux_data.pi_t);
 
     // H * pi
-    plp_mat_mult_f32(aux_data.H, aux_data.pi, BLOCK_SIZE, LENGTH, BLOCK_SIZE, aux_data.aux);
+    mat_mul_f32(aux_data.H, aux_data.pi, BLOCK_SIZE, LENGTH, BLOCK_SIZE, aux_data.aux);
 
     // diag + H * pi
     plp_mat_add_f32(aux_data.diag, aux_data.aux, BLOCK_SIZE, BLOCK_SIZE, aux_data.aux1);
-    plp_mat_trans_f32(aux_data.aux1, BLOCK_SIZE, BLOCK_SIZE, aux_data.aux);
+
+    mat_transpose(aux_data.aux1, BLOCK_SIZE, BLOCK_SIZE, aux_data.aux);
 
     // (diag + H * pi).T -> coefficient matrix
     // pi.T -> dependent variables matrix
@@ -139,8 +137,10 @@ void update(float x_n, float d_n) {
 
     // trying with x = A^(-1)*b
     plp_mat_inv_f32(aux_data.aux, aux_data.aux1, BLOCK_SIZE);
-    plp_mat_mult_f32(aux_data.aux1, aux_data.pi_t, BLOCK_SIZE, BLOCK_SIZE, LENGTH, block_rls.g);
-    plp_mat_trans_f32(block_rls.g, BLOCK_SIZE, LENGTH, aux_data.pi);
+
+    mat_mul_f32(aux_data.aux1, aux_data.pi_t, BLOCK_SIZE, BLOCK_SIZE, LENGTH, block_rls.g);
+
+    mat_transpose(block_rls.g, BLOCK_SIZE, LENGTH, aux_data.pi);
 
     // update filter w
     gemv(aux_data.pi, aux_data.err, LENGTH, BLOCK_SIZE, aux_data.aux2);
@@ -152,8 +152,8 @@ void update(float x_n, float d_n) {
     // update P matrix
     // be ware: pi contains the results of A^(-1)*b, i.e. g
     // vectorial product
-    plp_mat_mult_f32(aux_data.pi, aux_data.pi_t, LENGTH, BLOCK_SIZE, LENGTH, block_rls.outer_buff);
-    
+    mat_mul_f32(aux_data.pi, aux_data.pi_t, LENGTH, BLOCK_SIZE, LENGTH, block_rls.outer_buff);
+
     acc = block_rls.lmbd_inv_pwr[BLOCK_SIZE];
 
     // element-wise subtraction and multiplication
@@ -167,8 +167,10 @@ void update(float x_n, float d_n) {
     // remember a few values
     // need to make a copy of filter_x because we would like to change a data structure 
     // while iterating over it
-    plp_copy_f32(block_rls.filter_x, aux_data.aux2, (LENGTH - 1));
-    
+    for(i = 0; i < (LENGTH - 1); i++) {
+      aux_data.aux2[i] = block_rls.filter_x[i];
+    }
+
     for(i = 0; i < (LENGTH - 1); i++) {
       block_rls.filter_x[FILTER_X_SIZE - LENGTH + 1 + i] = aux_data.aux2[i]; 
     }
@@ -270,7 +272,7 @@ void init() {
 void cluster_fn() {
 
   // init performance counters
-  INIT_STATS();
+  INIT_STATS()
   
   // set initial values (not considered by performance counters)
   init();

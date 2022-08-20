@@ -122,7 +122,8 @@ void outer(float* vec_1, float* vec_2, int size_N, int size_M, float* matrix_o) 
     }
 }
 
-void mat_transpose(float * mat_in, int sizeN, int sizeM, float * mat_out){
+// transpose matrix
+void mat_transpose(float * mat_in, int sizeN, int sizeM, float * mat_out) {
   
   float temp, temp_1, temp_2, temp_3;
 
@@ -139,4 +140,38 @@ void mat_transpose(float * mat_in, int sizeN, int sizeM, float * mat_out){
       mat_out[(i+3) * sizeN + j] = temp_3;
     }
   }
+}
+
+// matrix mutliplication
+void mat_mul_f32(float * pSrcA, float  * pSrcB, int m, int n, int o, float * pDstC) {
+    int i, j, k;
+    float sum, sum_1, sum_2, sum_3;
+
+    for (k = 0; k < o; k += 4) {
+        for (i = 0; i < m; i++) {
+            sum = 0.0f;
+            sum_1 = 0.0f;
+            sum_2 = 0.0f;
+            sum_3 = 0.0f;
+
+            for (j = 0; j < n; j++) {
+                
+                float shared = pSrcA[i * n + j];
+                
+                float a = pSrcB[j * o + k];
+                float b = pSrcB[j * o + (k+1)];
+                float c = pSrcB[j * o + (k+2)];
+                float d = pSrcB[j * o + (k+3)];
+
+                sum += a * shared;
+                sum_1 += b * shared;
+                sum_2 += c * shared;
+                sum_3 += d * shared;
+            }
+            pDstC[i * o + k] = sum;
+            pDstC[i * o + (k+1)] = sum_1;
+            pDstC[i * o + (k+2)] = sum_2;
+            pDstC[i * o + (k+3)] = sum_3;
+        }
+    }
 }
