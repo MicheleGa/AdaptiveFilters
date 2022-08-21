@@ -1,5 +1,4 @@
 #include "pmsis.h"
-#include "plp_math.h"
 #include "math.h"
 #include "data.h"
 #include "perf.h"
@@ -125,7 +124,7 @@ void update(float x_n, float d_n) {
     mat_mul_f32(aux_data.H, aux_data.pi, BLOCK_SIZE, LENGTH, BLOCK_SIZE, aux_data.aux);
 
     // diag + H * pi
-    plp_mat_add_f32(aux_data.diag, aux_data.aux, BLOCK_SIZE, BLOCK_SIZE, aux_data.aux1);
+    mat_add_f32(aux_data.diag, aux_data.aux, BLOCK_SIZE, BLOCK_SIZE, aux_data.aux1);
 
     mat_transpose(aux_data.aux1, BLOCK_SIZE, BLOCK_SIZE, aux_data.aux);
 
@@ -136,7 +135,7 @@ void update(float x_n, float d_n) {
     // with A = (diag + H * pi).T and b = pi.T
 
     // trying with x = A^(-1)*b
-    plp_mat_inv_f32(aux_data.aux, aux_data.aux1, BLOCK_SIZE);
+    mat_inv_f32(aux_data.aux, aux_data.aux1, BLOCK_SIZE);
 
     mat_mul_f32(aux_data.aux1, aux_data.pi_t, BLOCK_SIZE, BLOCK_SIZE, LENGTH, block_rls.g);
 

@@ -1,5 +1,4 @@
 #include "pmsis.h"
-#include "plp_math.h"
 #include "data.h"
 #include "perf.h"
 #include "utils.h"

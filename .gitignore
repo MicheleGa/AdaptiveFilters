@@ -1,3 +1,4 @@
 # exclude python venv and pycache
 **/venv/
 **/__pycache__/
+**/BUILD/
