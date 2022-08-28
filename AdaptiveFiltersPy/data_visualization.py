@@ -55,49 +55,56 @@ if __name__ == '__main__':
     print('Data frame infos:')
     print(df.info())
 
-    # gather informations of the algorithms runnning on the whole 2048 samples with 116 bit filter
+    # gather informations of the algorithms runnning on the whole 2048 samples with 16 bit filter
     whole_code_df = df[df['code_portion'] == 'whole code']
     print('Full code performances:')
     print(whole_code_df)
 
-    """ print_bar_graph(df=whole_code_df,
+    print_bar_graph(df=whole_code_df,
                 x_axis='algorithm',
                 title='Full code execution',
-                file_name='full_code') """
+                file_name='full_code')
+
+    # gather informations of the optimized algorithms runnning on the whole 2048 samples with 16 bit filter
+    whole_code_df = df[df['code_portion'] == 'whole code (opt)']
+    print('Full code performances:')
+    print(whole_code_df)
+
+    print_bar_graph(df=whole_code_df,
+                x_axis='algorithm',
+                title='Full code execution (optimized)',
+                file_name='full_code_optimized')
 
     nlms_df = df[df['algorithm'] == 'nlms']
     rls_df = df[df['algorithm'] == 'rls']
     block_nlms_df = df[df['algorithm'] == 'block_nlms']
     block_rls_df = df[df['algorithm'] == 'block_rls']
 
-    # first row is the full code, so we don't want it
+    # first row are for the full code, full code optimized and the single iteration, so we don't want it
     print('NLMS performances:')
     print(nlms_df)
-    print_pie_graph(df=nlms_df.iloc[2:, :],
+    print_pie_graph(df=nlms_df.iloc[3:, :],
                 x_axis='code_portion',
                 title='NLMS Fine-grained Performances',
                 file_name='nlms_1_it_code_perf')
 
-    # first row is the full code, so we don't want it
     print('RLS performances:')
     print(rls_df)
-    print_pie_graph(df=rls_df.iloc[2:, :],
+    print_pie_graph(df=rls_df.iloc[3:, :],
                 x_axis='code_portion',
                 title='RLS Fine-grained Performances',
                 file_name='rls_1_it_code_perf')
 
-    # first row is full code, so we don't want it
     print('Block NLMS performances:')
     print(block_nlms_df)
-    print_pie_graph(df=block_nlms_df.iloc[2:, :],
+    print_pie_graph(df=block_nlms_df.iloc[3:, :],
                 x_axis='code_portion',
                 title='Block NLMS Fine-grained Performances',
                 file_name='block_nlms_1_it_code_perf')
 
-    # first row is full code, so we don't want it
     print('Block RLS performances:')
     print(block_rls_df)
-    print_pie_graph(df=block_rls_df.iloc[2:, :],
+    print_pie_graph(df=block_rls_df.iloc[3:, :],
                 x_axis='code_portion',
                 title='Block RLS Fine-grained Performances',
                 file_name='block_rls_1_it_code_perf')

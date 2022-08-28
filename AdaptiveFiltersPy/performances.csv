@@ -1,11 +1,13 @@
 algorithm,code portion,lines,total cycles,instructions,active cycles,external loads(L2+synch),TCDM cont,LD stalls,I$ misses
 nlms,whole code,all,623114,358434,623147,2048,0,36864,517
+nlms,whole code (opt),all,375240,327714,375273,2048,0,4096,451
 nlms,1 iteration,all,768,196,801,1,0,18,473
 nlms,shift,57-60,153,50,186,0,0,0,132
 nlms,filter_x dot product filter_w,63-65,213,56,212,0,0,0,154
 nlms,filter_x dot product filter_x,68-70,153,40,152,0,0,0,110
 nlms,filter_w update,75-77,444,87,443,0,0,16,242
 rls,whole code,all,10929288,9078818,10929321,2048,0,1609728,1155
+rls,whole code (opt),all,7748964,7446562,7748997,2048,0,36864,1375
 rls,1 iteration,all,6328,4454,6361,1,0,786,990
 rls,shift,66-69,155,50,201,0,0,0,143
 rls,filter_x dot product filter_w,72-74,227,57,215,0,0,0,154
@@ -18,6 +20,7 @@ rls,P update (gemv),101,1290,985,1300,0,0,256,55
 rls,P update (outer),104,1555,1195,1554,0,0,256,99
 rls,P update (element-wise sub and mult),107-112,1230,1051,1229,0,0,0,187
 block_nlms,whole code,all,1247800,836386,1247833,2304,0,144128,1331
+block_nlms,whole code (opt),all,934808,640546,934841,2304,0,32768,1683
 block_nlms,8 iterations,all,6041,3302,6074,9,0,563,1166
 block_nlms,buffers update,72-76,51,24,50,1,0,0,0
 block_nlms,hankel matrix H,87-94,919,574,917,0,0,36,275
@@ -31,6 +34,7 @@ block_nlms,filter_w update (vector by scalar),125-127,285,73,284,1,0,0,198
 block_nlms,shift (plp_copy),132,115,50,125,0,0,15,55
 block_nlms,shift (copy some values),134-136,139,37,149,0,0,0,110
 block_rls,whole code,all,11324335,9053467,11324379,2304,0,1980416,2750
+block_rls,whole code (opt),all,7508258,6961691,7508302,2304,0,214272,3377
 block_rls,8 iterations,all,46081,35393,46125,9,0,7736,1870
 block_rls,buffers update,87-91,51,24,50,1,0,0,0
 block_rls,hankel matrix H,102-109,804,481,802,0,0,36,253
