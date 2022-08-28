@@ -83,3 +83,14 @@ Notice that when a portion of *update* is surrounded with performance counters, 
 |P update (element-wise sub and mult)|160-165|1541|1307|1540|0|0|0|231|
 |shift (plp_copy)|170|148|50|147|0|0|15|77|
 |shift (copy some values)|172-174|139|37|138|0|0|0|99|
+
+
+TO-DO:
+-riporta obiettivo progetto (studio filtri ANC)
+    -chiarire metodologie
+    -stima performance algoritmi per pulp
+-focus su implementazione 
+    -floating point, esecuzione su cluster
+    -diagrammi a blocchi + pseudocodice
+-conclusioni
+    -filtro + veloce? di quanto? confronto algoritmi

@@ -37,8 +37,8 @@ d = [0.07122954389284161, -0.12552607712619263, -0.15183826595813738, 0.42737264
 
 # create a bunch adaptive filters
 #filter=pra.adaptive.RLS(length, lmbd=1.0, delta=2.0)
-filter=pra.adaptive.NLMS(length, mu=0.5)
-#filter=pra.adaptive.BlockLMS(length, mu=0.001, L=256, nlms=True)
+#filter=pra.adaptive.NLMS(length, mu=0.5)
+filter=pra.adaptive.BlockLMS(length, mu=0.001, L=8, nlms=True)
 #filter=pra.adaptive.BlockRLS(length, lmbd=1, delta=2.0, L=8)
 
 error=np.zeros(n_samples)
@@ -48,7 +48,7 @@ start_time = time.time()
 for i in range(n_samples):
     filter.update(x[i], d[i])
     error[i] = np.linalg.norm(filter.w - w)
-    
+
 print(f'Final error: {error[-1]}')
 print(f'Final filter weights: {filter.w}')
 print(f'Execution time: {time.time() - start_time}')

@@ -1,8 +1,14 @@
 import os
-import matplotlib.pyplot as plt
 import pandas as pd
+import matplotlib.pyplot as plt
 import seaborn as sns
-sns.set(rc = {'figure.figsize':(16,10)})
+sns.set(rc={'figure.figsize':(16,10)})
+plt.figure(figsize=(16, 10), dpi=80)
+plt.rc('font', size=20)          # controls default text sizes
+plt.rc('xtick', labelsize=20)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=20)    # fontsize of the tick labels
+
+
 plots_folder = './graphs'
 
 def print_bar_graph(df: pd.DataFrame,
@@ -22,9 +28,6 @@ def print_pie_graph(df: pd.DataFrame,
                     x_axis: str,
                     title: str,
                     file_name: str):
-
-    
-    plt.figure(figsize=(16, 10))
 
     #define data
     data = df.total_cycles
