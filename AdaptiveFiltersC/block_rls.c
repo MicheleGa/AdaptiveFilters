@@ -17,7 +17,6 @@ PI_L1 struct AdaptiveFilter{
   float filter_w[LENGTH];
   float filter_x[FILTER_X_SIZE];
   float block[BLOCK_SIZE];
-  float filter_d;
 
   float g[BLOCK_SIZE * LENGTH];
   float P[LENGTH * LENGTH];
@@ -81,6 +80,10 @@ PI_L1 float diff[LENGTH];
 int iteration = 0;
 
 void update(float x_n, float d_n) {
+  printf("%d\n", iteration);
+  INIT_STATS();
+  RESET_STATS();
+  START_STATS();
   
   // buffers update
   iteration++;
@@ -88,6 +91,9 @@ void update(float x_n, float d_n) {
   
   block_rls.filter_x[slot] = x_n;
   block_rls.block[slot] = d_n;
+
+  STOP_STATS();
+  PRINT_STATS();
 
   // perform an update of the coefficients every BLOCK_SIZE samples
   if(iteration % BLOCK_SIZE == 0) {
@@ -98,35 +104,84 @@ void update(float x_n, float d_n) {
     // build hankel matrix: the hankel matrix has constant anti-diagonals, 
     // with c as its first column (first BLOCK_SIZE elements from block_rls.filter_x) and 
     // r as its last row (last LENGTH elements from block_rls.filter_x)
+
+    RESET_STATS();
+    START_STATS();
+
     for(i = 0; i < BLOCK_SIZE; i++) {
       for(j = 0; j < LENGTH; j++) {
         aux_data.H[i * LENGTH + j] = block_rls.filter_x[j + i];
       }
     }
 
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
+
     // calculate error
     gemv(aux_data.H, block_rls.filter_w, BLOCK_SIZE, LENGTH, aux_data.err);
+
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
 
     for(i = 0; i < BLOCK_SIZE; i++) {
       aux_data.err[i] = block_rls.block[i] - aux_data.err[i]; 
     }
+
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
     
     // transpose 
     mat_transpose(aux_data.H, BLOCK_SIZE, LENGTH, aux_data.H_t);
+ 
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
 
     // calculate gain vector
     mat_mul_f32(block_rls.P, aux_data.H_t, LENGTH, LENGTH, BLOCK_SIZE, aux_data.pi);
 
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
+
     // transpose pi
     mat_transpose(aux_data.pi, LENGTH, BLOCK_SIZE, aux_data.pi_t);
+
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
 
     // H * pi
     mat_mul_f32(aux_data.H, aux_data.pi, BLOCK_SIZE, LENGTH, BLOCK_SIZE, aux_data.aux);
 
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
+
     // diag + H * pi
     mat_add_f32(aux_data.diag, aux_data.aux, BLOCK_SIZE, BLOCK_SIZE, aux_data.aux1);
 
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
+
     mat_transpose(aux_data.aux1, BLOCK_SIZE, BLOCK_SIZE, aux_data.aux);
+
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
 
     // (diag + H * pi).T -> coefficient matrix
     // pi.T -> dependent variables matrix
@@ -137,23 +192,54 @@ void update(float x_n, float d_n) {
     // trying with x = A^(-1)*b
     mat_inv_f32(aux_data.aux, aux_data.aux1, BLOCK_SIZE);
 
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
+
     mat_mul_f32(aux_data.aux1, aux_data.pi_t, BLOCK_SIZE, BLOCK_SIZE, LENGTH, block_rls.g);
 
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
+
     mat_transpose(block_rls.g, BLOCK_SIZE, LENGTH, aux_data.pi);
+
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
 
     // update filter w
     gemv(aux_data.pi, aux_data.err, LENGTH, BLOCK_SIZE, aux_data.aux2);
 
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
+
     for(i = 0; i < LENGTH; i++) {
       block_rls.filter_w[i] += aux_data.aux2[i];
     }
+
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
 
     // update P matrix
     // be ware: pi contains the results of A^(-1)*b, i.e. g
     // vectorial product
     mat_mul_f32(aux_data.pi, aux_data.pi_t, LENGTH, BLOCK_SIZE, LENGTH, block_rls.outer_buff);
 
+    STOP_STATS();
+    PRINT_STATS();
+    
     acc = block_rls.lmbd_inv_pwr[BLOCK_SIZE];
+
+    RESET_STATS();
+    START_STATS();
 
     // element-wise subtraction and multiplication
     for(i = 0; i < LENGTH; i++) {
@@ -163,6 +249,11 @@ void update(float x_n, float d_n) {
       }
     }
 
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
+
     // remember a few values
     // need to make a copy of filter_x because we would like to change a data structure 
     // while iterating over it
@@ -170,14 +261,22 @@ void update(float x_n, float d_n) {
       aux_data.aux2[i] = block_rls.filter_x[i];
     }
 
+    STOP_STATS();
+    PRINT_STATS();
+    RESET_STATS();
+    START_STATS();
+
     for(i = 0; i < (LENGTH - 1); i++) {
       block_rls.filter_x[FILTER_X_SIZE - LENGTH + 1 + i] = aux_data.aux2[i]; 
     }
+
+    STOP_STATS();
+    PRINT_STATS();
   }
 }
 
 void adaptive_filters_block_rls() {
-    for(int i = 0; i < N_SAMPLES; i++) {
+    for(int i = 0; i < BLOCK_SIZE; i++) {
       // update filter_x, then d, and eventually filter_w
       update(input_data.x[i], input_data.input[i]);
 
@@ -220,8 +319,6 @@ void init() {
     zeros(block_rls.filter_w, LENGTH);
 
     zeros(block_rls.block, BLOCK_SIZE);
-
-    block_rls.filter_d = 0.0f;
 
     if (RLS_DELTA <= 0.0f) {
       printf("Delta must be a positive number ...");
@@ -271,23 +368,22 @@ void init() {
 void cluster_fn() {
 
   // init performance counters
-  INIT_STATS()
+  
   
   // set initial values (not considered by performance counters)
   init();
 
   // reset stats and start measuring 
-  RESET_STATS();
-  START_STATS();
+  
 
   // workload
   adaptive_filters_block_rls();
   
   // stop measuring
-  STOP_STATS();
+ 
 
   // end of the performance statistics loop
-  PRINT_STATS();
+  
   
   if(pi_core_id() == 0) {
     #ifdef DEBUG

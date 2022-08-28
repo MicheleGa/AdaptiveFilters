@@ -15,7 +15,6 @@ PI_L1 struct AdaptiveFilter{
   float filter_w[LENGTH];
   float filter_x[FILTER_X_SIZE];
   float block[BLOCK_SIZE];
-  float filter_d;
 } block_nlms;
 
 // auxiliary data for block lms management
@@ -179,8 +178,6 @@ void init() {
     zeros(block_nlms.filter_w, LENGTH);
 
     zeros(block_nlms.block, BLOCK_SIZE);
-    
-    block_nlms.filter_d = 0.0f;
 
     #ifdef DEBUG
     zeros(error, N_SAMPLES);

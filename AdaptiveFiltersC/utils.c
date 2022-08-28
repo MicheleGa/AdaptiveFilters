@@ -179,8 +179,18 @@ void mat_mul_f32(float * pSrcA, float  * pSrcB, int m, int n, int o, float * pDs
 // matrix addition
 void mat_add_f32(float * pSrcA, float * pSrcB, uint32_t M, uint32_t N, float * pDst) {
     
-    for (int i = 0; i < M * N; i++) {
-            pDst[i] = pSrcA[i] + pSrcB[i];
+    float temp, temp_1, temp_2, temp_3;
+
+    for (int i = 0; i < M * N; i += 4) {
+      temp = pSrcA[i] + pSrcB[i];
+      temp_1 = pSrcA[i+1] + pSrcB[i+1];
+      temp_2 = pSrcA[i+2] + pSrcB[i+2];
+      temp_3 = pSrcA[i+3] + pSrcB[i+3];
+
+      pDst[i] = temp;
+      pDst[i+1] = temp_1;
+      pDst[i+2] = temp_2;
+      pDst[i+3] = temp_3;
     }
 }
 

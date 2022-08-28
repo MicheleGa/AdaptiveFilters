@@ -74,6 +74,16 @@ Changed to a hand-made version to use loop unrolling instead of trasnpose from p
 
 ## gain vector (aux1 = diag + aux)
 
+Just the average loop unroll x4:
+
+> - total cycles = 426
+> - instructions = 297
+> - active cycles = 414
+> - external loads (L2+synch) = 0
+> - TCDM cont = 0
+> - LD stalls = 1
+> - I$ misses = 110
+
 ## gain vector (aux = transpose aux)
 
 Changed to a hand-made version to use loop unrolling instead of trasnpose from plp_math.h

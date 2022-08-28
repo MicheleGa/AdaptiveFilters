@@ -14,8 +14,7 @@ PI_L1 struct AdaptiveFilter{
 
   float filter_w[LENGTH];
   float filter_x[LENGTH]; 
-  float filter_d;
-
+  
   float g[LENGTH];
   float P[LENGTH * LENGTH];
   float aux[LENGTH];
@@ -153,8 +152,6 @@ void init() {
     zeros(rls.filter_x, LENGTH);
 
     zeros(rls.filter_w, LENGTH);
-
-    rls.filter_d = 0.0f;
 
     #ifdef DEBUG
     // init with zeros: error, filter x and w, 

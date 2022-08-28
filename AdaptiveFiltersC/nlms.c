@@ -11,7 +11,6 @@ PI_L1 struct AdaptiveFilter{
 
   float filter_w[LENGTH];
   float filter_x[LENGTH]; 
-  float filter_d;
 } nlms;
 
 // input data structures
@@ -122,8 +121,6 @@ void init() {
     zeros(nlms.filter_x, LENGTH);
 
     zeros(nlms.filter_w, LENGTH);
-
-    nlms.filter_d = 0.0f;
 
     #ifdef DEBUG
     zeros(error, N_SAMPLES);
