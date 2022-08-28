@@ -12,7 +12,7 @@ import math
 import matplotlib.pyplot as plt
 import pyroomacoustics as pra
 
-results_file = 'results.txt'
+results_file = 'results_1.txt'
 
 def get_string_to_record(desc, data, data_name, length) -> str:
     string = f'{desc}:\n'
