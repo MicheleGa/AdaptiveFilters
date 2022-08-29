@@ -9,7 +9,7 @@ plt.rc('xtick', labelsize=20)    # fontsize of the tick labels
 plt.rc('ytick', labelsize=20)    # fontsize of the tick labels
 
 
-plots_folder = './graphs'
+plots_folder = './graphs/cycles_recording'
 
 def print_bar_graph(df: pd.DataFrame,
                     x_axis: str,
