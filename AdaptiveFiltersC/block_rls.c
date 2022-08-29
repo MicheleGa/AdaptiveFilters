@@ -80,10 +80,6 @@ PI_L1 float diff[LENGTH];
 int iteration = 0;
 
 void update(float x_n, float d_n) {
-  printf("%d\n", iteration);
-  INIT_STATS();
-  RESET_STATS();
-  START_STATS();
   
   // buffers update
   iteration++;
@@ -269,14 +265,11 @@ void update(float x_n, float d_n) {
     for(i = 0; i < (LENGTH - 1); i++) {
       block_rls.filter_x[FILTER_X_SIZE - LENGTH + 1 + i] = aux_data.aux2[i]; 
     }
-
-    STOP_STATS();
-    PRINT_STATS();
   }
 }
 
 void adaptive_filters_block_rls() {
-    for(int i = 0; i < BLOCK_SIZE; i++) {
+    for(int i = 0; i < N_SAMPLES; i++) {
       // update filter_x, then d, and eventually filter_w
       update(input_data.x[i], input_data.input[i]);
 
@@ -368,22 +361,23 @@ void init() {
 void cluster_fn() {
 
   // init performance counters
-  
+  INIT_STATS();
   
   // set initial values (not considered by performance counters)
   init();
 
   // reset stats and start measuring 
-  
+  RESET_STATS();
+  START_STATS();
 
   // workload
   adaptive_filters_block_rls();
   
   // stop measuring
- 
+  STOP_STATS();
 
   // end of the performance statistics loop
-  
+  PRINT_STATS();
   
   if(pi_core_id() == 0) {
     #ifdef DEBUG
