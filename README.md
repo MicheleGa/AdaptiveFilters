@@ -26,8 +26,10 @@ In this folder instead, you can find the C of the adaptive filter algorithms: fo
 ## Run instruction
 
 Running the code could be a bit difficult: first is necessary to get the PULP virtual machine and then run it (I used VMWare, free version). 
-Secondly, produce the python golden model my running *adaptive_filters.py* to write on results.txt.
-Then the C code can run with the *make clean all run* command on the PULP platform.
+Secondly, I prefered to produce the python golden model on my Windows python virtual environemnt, run *adaptive_filters.py* to write on results.txt and transfer them to the PULP VM thanks to git.
+Then the C code can run int he PULP VM with the *make clean all run* command.
+
+The *data_visualization.py* scripts is inteded to both study the behaviour of the algorithms while changing their parameters and analyzing the performances of the C code (output in *graphs* directories).
 
 ## Third Party Code
 
